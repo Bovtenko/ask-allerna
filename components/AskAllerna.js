@@ -100,11 +100,27 @@ DO NOT output anything other than valid JSON. Your response must start with { an
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @keyframes wave {
+          0% {
+            background-position: 200% 0;
+          }
+          100% {
+            background-position: -200% 0;
+          }
+        }
+        .animate-wave {
+          animation: wave 6s linear infinite;
+        }
+        `
+      }} />
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 via-blue-600 via-purple-600 to-blue-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
+              <Shield className="w-8 h-8 text-white relative z-10" />
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Ask Allerna</h1>
@@ -112,53 +128,16 @@ DO NOT output anything other than valid JSON. Your response must start with { an
         </div>
         
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h3 className="font-bold text-blue-800 mb-2">🧠 Trust Your Instincts</h3>
-            <p className="text-sm text-blue-700">
-              Social engineering is a complex problem that uses sophisticated techniques and psychological manipulation 
-              that are not always easy to detect. The fact that you are asking this question suggests that your intuition 
-              is telling you something is off. <strong>That human reaction is critical in social engineering defense.</strong> 
-              Your instincts are often the first line of defense against these attacks.
-            </p>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-            <h3 className="font-bold text-amber-800 mb-2">🔒 Privacy & Data Protection Notice</h3>
-            <div className="text-sm text-amber-700 space-y-2">
-              <p>
-                <strong>Important:</strong> This tool processes your content securely on our servers to provide analysis. 
-                No data is stored permanently, and all analysis is performed in real-time.
-              </p>
-              <p>
-                <strong>For maximum privacy:</strong> Remove or replace sensitive information before analysis:
-              </p>
-              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                <li>Email addresses → "user@[REDACTED].com"</li>
-                <li>Phone numbers → "[PHONE-REDACTED]"</li>
-                <li>Names → "[NAME-REDACTED]"</li>
-                <li>Passwords/codes → "[CODE-REDACTED]"</li>
-                <li>Company names → "[COMPANY-REDACTED]"</li>
-                <li>Account numbers → "[ACCOUNT-REDACTED]"</li>
-              </ul>
-              <p className="text-xs">
-                <strong>The analysis will remain effective even with redacted information.</strong> 
-                Focus on preserving the suspicious language patterns and structure.
-              </p>
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Paste suspicious content or describe the incident:
             </label>
-            <div className="mb-3 text-sm text-gray-600">
-              Copy and paste suspicious emails, describe phone calls, text messages, or any other potential social engineering attempts.
-              <strong> Remember to redact sensitive information as noted above.</strong>
-            </div>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Example: I received an email from 'support@[BANK-REDACTED].com' saying my account will be suspended unless I click a link and verify my login within 24 hours. The sender claimed to be from [BANK-REDACTED] security team and said I need to update my information immediately or lose access to my account..."
+              placeholder="Copy and paste suspicious emails, describe phone calls, text messages, or any other potential social engineering attempts. Remember to redact sensitive information as noted below.
+
+Example: I received an email from 'support@[BANK-REDACTED].com' saying my account will be suspended unless I click a link and verify my login within 24 hours. The sender claimed to be from [BANK-REDACTED] security team and said I need to update my information immediately or lose access to my account..."
               className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
           </div>
@@ -166,19 +145,22 @@ DO NOT output anything other than valid JSON. Your response must start with { an
           <button
             onClick={analyzeIncident}
             disabled={isAnalyzing || !input.trim()}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:bg-gray-400 font-medium text-lg transition-all duration-200"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 text-white rounded-lg hover:opacity-90 disabled:bg-gray-400 font-medium text-lg transition-all duration-200 relative overflow-hidden"
           >
-            {isAnalyzing ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Ask Allerna to Analyze
-              </>
-            ) : (
-              <>
-                <Send className="w-5 h-5" />
-                Ask Allerna to Analyze
-              </>
-            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 via-blue-600 via-purple-600 to-blue-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
+            <div className="relative z-10 flex items-center gap-2">
+              {isAnalyzing ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Ask Allerna to Analyze
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Ask Allerna to Analyze
+                </>
+              )}
+            </div>
           </button>
         </div>
       </div>
@@ -254,7 +236,44 @@ DO NOT output anything other than valid JSON. Your response must start with { an
         </div>
       )}
 
-      <div className="mt-8 bg-gray-100 border border-gray-300 rounded-lg p-6">
+      {/* Trust Your Instincts Section - Moved to bottom */}
+      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-800 mb-2">🧠 Trust Your Instincts</h3>
+        <p className="text-sm text-blue-700">
+          Social engineering is a complex problem that uses sophisticated techniques and psychological manipulation 
+          that are not always easy to detect. The fact that you are asking this question suggests that your intuition 
+          is telling you something is off. <strong>That human reaction is critical in social engineering defense.</strong> 
+          Your instincts are often the first line of defense against these attacks.
+        </p>
+      </div>
+
+      {/* Privacy & Data Protection Notice - Moved to bottom */}
+      <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <h3 className="font-bold text-amber-800 mb-2">🔒 Privacy & Data Protection Notice</h3>
+        <div className="text-sm text-amber-700 space-y-2">
+          <p>
+            <strong>Important:</strong> This tool processes your content securely on our servers to provide analysis. 
+            No data is stored permanently, and all analysis is performed in real-time.
+          </p>
+          <p>
+            <strong>For maximum privacy:</strong> Remove or replace sensitive information before analysis:
+          </p>
+          <ul className="list-disc list-inside ml-4 text-xs space-y-1">
+            <li>Email addresses → "user@[REDACTED].com"</li>
+            <li>Phone numbers → "[PHONE-REDACTED]"</li>
+            <li>Names → "[NAME-REDACTED]"</li>
+            <li>Passwords/codes → "[CODE-REDACTED]"</li>
+            <li>Company names → "[COMPANY-REDACTED]"</li>
+            <li>Account numbers → "[ACCOUNT-REDACTED]"</li>
+          </ul>
+          <p className="text-xs">
+            <strong>The analysis will remain effective even with redacted information.</strong> 
+            Focus on preserving the suspicious language patterns and structure.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 bg-gray-100 border border-gray-300 rounded-lg p-6">
         <h3 className="font-bold text-gray-800 mb-3">⚠️ Important Legal Disclaimer</h3>
         <div className="text-sm text-gray-700 space-y-3">
           <p>
