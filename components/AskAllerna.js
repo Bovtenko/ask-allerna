@@ -60,7 +60,8 @@ const AskAllerna = () => {
       'MEDIUM': 'text-yellow-600 bg-yellow-100',
       'LOW': 'text-blue-600 bg-blue-100',
       'SAFE': 'text-green-600 bg-green-100',
-      'ERROR': 'text-gray-600 bg-gray-100'
+      'ERROR': 'text-gray-600 bg-gray-100',
+      'NEEDS_MORE_INFO': 'text-blue-600 bg-blue-100'
     };
     return colors[level] || 'text-gray-600 bg-gray-100';
   };
@@ -70,6 +71,7 @@ const AskAllerna = () => {
     if (level === 'MEDIUM') return <AlertTriangle className="w-5 h-5" />;
     if (level === 'LOW') return <Clock className="w-5 h-5" />;
     if (level === 'SAFE') return <CheckCircle className="w-5 h-5" />;
+    if (level === 'NEEDS_MORE_INFO') return <AlertTriangle className="w-5 h-5" />;
     return <AlertTriangle className="w-5 h-5" />;
   };
 
@@ -157,77 +159,182 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
             </button>
           </div>
 
-          <div className={`flex items-center gap-3 p-4 rounded-lg mb-6 ${getThreatColor(analysis.threatLevel)}`}>
-            {getThreatIcon(analysis.threatLevel)}
-            <div>
-              <div className="font-bold text-xl">Threat Level: {analysis.threatLevel}</div>
-              <div className="text-sm opacity-90">Risk Score: {analysis.riskScore}/100</div>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <div className="font-bold text-yellow-800 mb-2">⚠️ Allerna Security Assessment:</div>
-            <div className="text-yellow-700 text-lg">{analysis.immediateAction}</div>
-            <div className="text-sm text-yellow-600 mt-2">
-              <strong>Important:</strong> This assessment is for informational purposes only. 
-              Always verify through your organization's official channels and follow company policies.
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="font-bold text-lg mb-3">Incident Classification</h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="font-medium">{analysis.incidentType}</div>
+          {/* Special UI for insufficient information */}
+          {analysis.threatLevel === 'NEEDS_MORE_INFO' ? (
+            <div className="space-y-6">
+              {/* Friendly header */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <div className="text-6xl mb-4">📝</div>
+                <h3 className="text-2xl font-bold text-blue-800 mb-2">We need more details to help you</h3>
+                <p className="text-blue-700 text-lg">
+                  To provide an accurate security analysis, please share more information about the suspicious communication.
+                </p>
               </div>
-            </div>
 
-            <div>
-              <h3 className="font-bold text-lg mb-3">🚩 Warning Signs Detected</h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <ul className="list-disc list-inside space-y-1">
-                  {analysis.redFlags.map((flag, index) => (
-                    <li key={index} className="text-sm">{flag}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {analysis.researchFindings && (
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 className="font-bold text-lg mb-3">🔍 Research Findings</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <ul className="list-disc list-inside space-y-1">
-                    {analysis.researchFindings.map((finding, index) => (
-                      <li key={index} className="text-sm">{finding}</li>
-                    ))}
-                  </ul>
+              {/* What to include section */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                <h4 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-2">
+                  <span>💡</span> Please include these details:
+                </h4>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-600 font-bold">📧</span>
+                      <div>
+                        <div className="font-medium text-blue-800">Sender Information</div>
+                        <div className="text-blue-600 text-sm">Email address, phone number, or claimed organization</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-600 font-bold">💬</span>
+                      <div>
+                        <div className="font-medium text-blue-800">Complete Message</div>
+                        <div className="text-blue-600 text-sm">Full email text, call transcript, or message content</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-600 font-bold">🔗</span>
+                      <div>
+                        <div className="font-medium text-blue-800">Links & Attachments</div>
+                        <div className="text-blue-600 text-sm">Any URLs, files, or downloads mentioned</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-600 font-bold">🚨</span>
+                      <div>
+                        <div className="font-medium text-blue-800">What Seemed Suspicious</div>
+                        <div className="text-blue-600 text-sm">What specifically raised your concern</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-600 font-bold">⏰</span>
+                      <div>
+                        <div className="font-medium text-blue-800">Context & Timing</div>
+                        <div className="text-blue-600 text-sm">When/how you received it, was it unsolicited</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-600 font-bold">🎯</span>
+                      <div>
+                        <div className="font-medium text-blue-800">Requests Made</div>
+                        <div className="text-blue-600 text-sm">Any requests for passwords, info, or actions</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              {/* Example section */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <h4 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">
+                  <span>✅</span> Good example:
+                </h4>
+                <div className="bg-white border border-green-300 rounded-lg p-4 text-sm text-gray-700">
+                  <span className="font-mono">
+                    "I received an email from 'security@chase-verify.net' claiming to be Chase Bank. 
+                    The subject was 'URGENT: Account Suspended' and it said I need to click a link 
+                    to verify my account within 24 hours or it will be closed. The link was 
+                    https://chase-security-update.com/verify. I found it suspicious because 
+                    I didn't recognize the domain and the email felt very urgent and threatening."
+                  </span>
+                </div>
+              </div>
+
+              {/* Action button */}
+              <div className="text-center">
+                <button
+                  onClick={clearAnalysis}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
+                >
+                  <span>🔄</span>
+                  Try Again with More Details
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Regular analysis results */
+            <div>
+              <div className={`flex items-center gap-3 p-4 rounded-lg mb-6 ${getThreatColor(analysis.threatLevel)}`}>
+                {getThreatIcon(analysis.threatLevel)}
+                <div>
+                  <div className="font-bold text-xl">Threat Level: {analysis.threatLevel}</div>
+                  <div className="text-sm opacity-90">Risk Score: {analysis.riskScore}/100</div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <div className="font-bold text-yellow-800 mb-2">⚠️ Allerna Security Assessment:</div>
+                <div className="text-yellow-700 text-lg">{analysis.immediateAction}</div>
+                <div className="text-sm text-yellow-600 mt-2">
+                  <strong>Important:</strong> This assessment is for informational purposes only. 
+                  Always verify through your organization's official channels and follow company policies.
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h3 className="font-bold text-lg mb-3">Incident Classification</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="font-medium">{analysis.incidentType}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-lg mb-3">🚩 Warning Signs Detected</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <ul className="list-disc list-inside space-y-1">
+                      {analysis.redFlags.map((flag, index) => (
+                        <li key={index} className="text-sm">{flag}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {analysis.researchFindings && (
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">🔍 Research Findings</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <ul className="list-disc list-inside space-y-1">
+                        {analysis.researchFindings.map((finding, index) => (
+                          <li key={index} className="text-sm">{finding}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-6">
+                <h3 className="font-bold text-lg mb-3">📋 Detailed Security Analysis</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-gray-700 leading-relaxed">{analysis.explanation}</p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3 text-blue-800">🛡️ Allerna Recommendations</h3>
+                <div className="text-sm text-blue-700 mb-3">
+                  <strong>Note:</strong> These are general recommendations based on common security practices. 
+                  Always follow your organization's specific policies and procedures.
+                </div>
+                <ol className="list-decimal list-inside space-y-2">
+                  {analysis.nextSteps.map((step, index) => (
+                    <li key={index} className="text-blue-800">{step}</li>
+                  ))}
+                </ol>
               </div>
             </div>
           )}
-
-          <div className="mb-6">
-            <h3 className="font-bold text-lg mb-3">📋 Detailed Security Analysis</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700 leading-relaxed">{analysis.explanation}</p>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-bold text-lg mb-3 text-blue-800">🛡️ Allerna Recommendations</h3>
-            <div className="text-sm text-blue-700 mb-3">
-              <strong>Note:</strong> These are general recommendations based on common security practices. 
-              Always follow your organization's specific policies and procedures.
-            </div>
-            <ol className="list-decimal list-inside space-y-2">
-              {analysis.nextSteps.map((step, index) => (
-                <li key={index} className="text-blue-800">{step}</li>
-              ))}
-            </ol>
-          </div>
         </div>
       )}
 
