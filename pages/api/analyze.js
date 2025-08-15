@@ -1,4 +1,4 @@
-const PROMPTS = require('../../prompts.js'); // Add this import
+import PROMPTS from '../../prompts.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -6,10 +6,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { incident } = req.body; // Changed from 'prompt'
+    const { incident } = req.body;
 
     if (!incident) {
-      throw new Error("No incident data provided");
+      return res.status(400).json({ error: 'No incident data provided' });
+    }
+
+    // Check if API key exists
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: 'API key not configured' });
     }
 
     // Build the complete prompt from components
@@ -42,29 +47,76 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-3-haiku-20240307",
         max_tokens: 1000,
-        messages: [{ role: "user", content: fullPrompt }] // Use fullPrompt
+        messages: [{ role: "user", content: fullPrompt }]
       })
     });
 
-    // ... rest of your code stays the same until the fallback analysis
+    if (!response.ok) {
+      throw new Error(`Anthropic API responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
     
-    // In your catch block for JSON parsing, add researchFindings:
-    analysis = {
-      threatLevel: "MEDIUM",
-      incidentType: "Social Engineering Analysis", 
-      riskScore: 60,
-      immediateAction: "Review the analysis and report to IT security",
-      redFlags: ["Analysis completed"],
-      researchFindings: ["Unable to complete research due to parsing error"], // Add this
-      explanation: responseText,
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error('Invalid response format from Anthropic API');
+    }
+
+    const responseText = data.content[0].text;
+    let analysis;
+
+    try {
+      // Try to parse the JSON response
+      analysis = JSON.parse(responseText);
+      
+      // Ensure required fields exist
+      if (!analysis.threatLevel) analysis.threatLevel = "MEDIUM";
+      if (!analysis.researchFindings) analysis.researchFindings = [];
+      if (!analysis.riskScore) analysis.riskScore = 50;
+      if (!analysis.immediateAction) analysis.immediateAction = "Review and assess";
+      if (!analysis.redFlags) analysis.redFlags = [];
+      if (!analysis.explanation) analysis.explanation = "Analysis completed";
+      if (!analysis.nextSteps) analysis.nextSteps = ["Follow security protocols"];
+      
+    } catch (parseError) {
+      // Fallback if JSON parsing fails
+      console.error('JSON parsing failed:', parseError);
+      analysis = {
+        threatLevel: "MEDIUM",
+        incidentType: "Social Engineering Analysis", 
+        riskScore: 60,
+        immediateAction: "Review the analysis and report to IT security",
+        redFlags: ["Analysis completed"],
+        researchFindings: ["Unable to complete research due to parsing error"],
+        explanation: responseText,
+        nextSteps: [
+          "Report this incident to your IT security team or designated security personnel immediately",
+          "Follow company security procedures", 
+          "Do not interact with suspicious content"
+        ]
+      };
+    }
+
+    return res.status(200).json(analysis);
+
+  } catch (error) {
+    console.error('Analysis error:', error);
+    
+    // Return a fallback response instead of just an error
+    const fallbackAnalysis = {
+      threatLevel: "UNKNOWN",
+      incidentType: "Analysis Error",
+      riskScore: 50,
+      immediateAction: "Manual review required",
+      redFlags: ["System error occurred"],
+      researchFindings: ["Analysis could not be completed"],
+      explanation: `Analysis failed: ${error.message}`,
       nextSteps: [
-        "Report this incident to your IT security team or designated security personnel immediately",
-        "Follow company security procedures", 
-        "Do not interact with suspicious content"
+        "Try again in a few moments",
+        "If the issue persists, contact technical support",
+        "Exercise caution with the suspicious content"
       ]
     };
 
-  } catch (error) {
-    // ... rest stays the same
+    return res.status(500).json(fallbackAnalysis);
   }
 }

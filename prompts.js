@@ -44,4 +44,4 @@ const PROMPTS = {
   }
 };
 
-module.exports = PROMPTS;
+export default PROMPTS;
