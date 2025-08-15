@@ -29,7 +29,7 @@ const AskAllerna = () => {
       }
 
       const data = await response.json();
-      setAnalysis(data.analysis);
+      setAnalysis(data);
       
     } catch (error) {
       console.error("Analysis error:", error);
