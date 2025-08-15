@@ -14,34 +14,13 @@ const AskAllerna = () => {
     setIsAnalyzing(true);
     
     try {
-      const prompt = `You are an expert cybersecurity analyst. Analyze this potential security incident against social engineering patterns.
-
-IMPORTANT: You MUST respond with ONLY a valid JSON object. Do not include any explanatory text before or after the JSON. Your entire response should be parseable JSON.
-
-INCIDENT: ${input}
-
-CRITICAL: For ANY suspicious activity, the FIRST recommendation must ALWAYS be to report to IT security/company security team immediately. This is the most important step in incident response.
-
-Respond with this exact JSON format:
-{
-  "threatLevel": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "SAFE",
-  "incidentType": "string describing the type of threat",
-  "riskScore": number between 0-100,
-  "immediateAction": "string with immediate action needed",
-  "redFlags": ["array", "of", "warning", "signs", "detected"],
-  "explanation": "detailed explanation of the analysis",
-  "nextSteps": ["ALWAYS start with: Report this incident to your IT security team or designated security personnel immediately", "other", "specific", "actions", "to", "take"]
-}
-
-DO NOT output anything other than valid JSON. Your response must start with { and end with }.`;
-
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: prompt
+          incident: input
         })
       });
 
@@ -50,7 +29,7 @@ DO NOT output anything other than valid JSON. Your response must start with { an
       }
 
       const data = await response.json();
-      setAnalysis(data.analysis);
+      setAnalysis(data);
       
     } catch (error) {
       console.error("Analysis error:", error);
@@ -60,6 +39,7 @@ DO NOT output anything other than valid JSON. Your response must start with { an
         riskScore: 0,
         immediateAction: "Try again or contact support",
         redFlags: ["System temporarily unavailable"],
+        researchFindings: ["System error occurred"],
         explanation: `Error: ${error.message}. Please try again or contact support if the problem persists.`,
         nextSteps: [
           "Report this incident to your IT security team or designated security personnel immediately",
@@ -213,6 +193,21 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
               </div>
             </div>
           </div>
+
+          {analysis.researchFindings && (
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="font-bold text-lg mb-3">🔍 Research Findings</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1">
+                    {analysis.researchFindings.map((finding, index) => (
+                      <li key={index} className="text-sm">{finding}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mb-6">
             <h3 className="font-bold text-lg mb-3">📋 Detailed Security Analysis</h3>
