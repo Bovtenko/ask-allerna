@@ -38,7 +38,6 @@ const AskAllerna = () => {
       setAnalysis({
         threatLevel: "ERROR",
         incidentType: "Analysis Failed",
-        riskScore: 0,
         immediateAction: "Try again or contact support",
         redFlags: ["System temporarily unavailable"],
         researchFindings: ["System error occurred"],
@@ -61,7 +60,7 @@ const AskAllerna = () => {
       'HIGH': 'text-orange-600 bg-orange-100', 
       'MEDIUM': 'text-yellow-600 bg-yellow-100',
       'LOW': 'text-blue-600 bg-blue-100',
-      'SAFE': 'text-green-600 bg-green-100',
+      'LEGITIMATE': 'text-green-600 bg-green-100',
       'ERROR': 'text-gray-600 bg-gray-100',
       'NEEDS_MORE_INFO': 'text-blue-600 bg-blue-100'
     };
@@ -72,7 +71,7 @@ const AskAllerna = () => {
     if (level === 'CRITICAL' || level === 'HIGH') return <XCircle className="w-5 h-5" />;
     if (level === 'MEDIUM') return <AlertTriangle className="w-5 h-5" />;
     if (level === 'LOW') return <Clock className="w-5 h-5" />;
-    if (level === 'SAFE') return <CheckCircle className="w-5 h-5" />;
+    if (level === 'LEGITIMATE') return <CheckCircle className="w-5 h-5" />;
     if (level === 'NEEDS_MORE_INFO') return <AlertTriangle className="w-5 h-5" />;
     return <AlertTriangle className="w-5 h-5" />;
   };
@@ -103,7 +102,6 @@ ${input.length > 200 ? input.substring(0, 200) + '...' : input}
 
 THREAT ASSESSMENT:
 - Threat Level: ${analysis.threatLevel}
-- Risk Score: ${analysis.riskScore}/100
 - Classification: ${analysis.incidentType}
 
 IMMEDIATE ACTION REQUIRED:
@@ -345,7 +343,6 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
                 {getThreatIcon(analysis.threatLevel)}
                 <div>
                   <div className="font-bold text-xl">Threat Level: {analysis.threatLevel}</div>
-                  <div className="text-sm opacity-90">Risk Score: {analysis.riskScore}/100</div>
                 </div>
               </div>
 
@@ -562,4 +559,4 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
   );
 };
 
-export default AskAllerna;// Force deploy
+export default AskAllerna;
