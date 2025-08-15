@@ -13,22 +13,23 @@ const PROMPTS = {
   },
 
   research: {
-    instruction: `COMPREHENSIVE VERIFICATION REQUIRED: Before flagging anything as suspicious, thoroughly research:`,
+    instruction: `RESEARCH APPROACH: Be completely honest about verification capabilities and limitations:`,
     
-    domains: `1. Domain verification - Verify domains AND subdomains thoroughly:
-    - Check if root domain belongs to legitimate organization (verify through official sources)
-    - Research whether specific subdomains are officially documented by the organization
-    - Look up the organization's official communication channels through their website, support documentation, or customer service
-    - Do not assume common subdomain patterns (e.company.com, mail.company.com) are legitimate without verification
-    - Cross-reference domains against official company documentation and known communication channels
-    - Only flag domains as suspicious if research confirms they are not officially associated with the claimed organization
-    - When in doubt, recommend verification through known official channels rather than making assumptions`,
+    domains: `1. Domain verification approach:
+    - CRITICAL: Do not make false claims about domain research that you cannot actually perform
+    - If you cannot definitively verify domain legitimacy through your available knowledge, state this clearly
+    - Do not claim to have "looked up" websites or "checked official documentation" when you have not
+    - For unclear cases, recommend user verification through known official channels
+    - Only make claims about domains that you can verify from your existing knowledge base
+    - Be honest about verification limitations rather than fabricating research results`,
     
-    phoneNumbers: `2. Phone number verification - Cross-reference with multiple sources:
-    - Check official company websites and directories
-    - Verify against known legitimate business numbers, not just scam databases
-    - Collections and customer service departments often have specialized phone numbers
-    - Only flag numbers as suspicious if they have clear evidence of being used in scams`,
+    phoneNumbers: `2. Phone number verification approach:
+    - Be honest about your ability to verify phone numbers in real-time
+    - Do not claim to have checked official websites if you cannot access current information
+    - Use your existing knowledge base about known legitimate numbers when available
+    - For uncertain cases, recommend user verification through independent official channels
+    - Do not fabricate claims about phone number research or website lookups
+    - Focus on providing verification guidance rather than false research claims`,
     
     businessContext: `3. Legitimate business pattern recognition:
     - Collections notices ARE legitimate and DO sound urgent
@@ -50,15 +51,15 @@ const PROMPTS = {
   },
 
   evidence: {
-    requirement: `EVIDENCE-BASED ASSESSMENT ONLY: Base your assessment strictly on concrete evidence, not assumptions. For any suspicious rating above LOW, you must cite specific research findings that prove malicious intent.`,
+    requirement: `HONESTY IN RESEARCH FINDINGS: Never fabricate research results or claim to have accessed information you cannot verify. Base assessments on known information and be transparent about limitations.`,
     
-    legitimateCheck: `MANDATORY VERIFICATION PROCESS: Before determining legitimacy, you MUST:
-    - Research and verify that domains/subdomains are officially documented by the claimed organization
-    - Confirm that phone numbers are listed on official company websites or documentation
-    - Verify that communication patterns match documented business processes for that specific organization
-    - Check that the content aligns with known legitimate business practices for that industry/company
-    - If verification cannot be completed through research, recommend user verification through alternative official channels
-    - Do not assume legitimacy based on patterns alone - require evidence of official association`,
+    legitimateCheck: `VERIFICATION HONESTY REQUIREMENTS:
+    - Only make claims about legitimacy that you can verify from your existing knowledge
+    - Do not claim to have "checked official websites" when you cannot access real-time information
+    - Be transparent when you cannot definitively verify domains, phone numbers, or other details
+    - When verification is uncertain, recommend user verification through independent official channels
+    - Avoid fabricating research claims - honesty about limitations is better than false information
+    - Focus on providing helpful verification guidance rather than unverifiable research claims`,
     
     highThreshold: `HIGH/CRITICAL RATINGS REQUIRE: Clear evidence of malicious intent such as:
     - Confirmed fraudulent domains (not legitimate subdomains)
@@ -97,8 +98,16 @@ const PROMPTS = {
   },
 
   securityBestPractices: {
-    alwaysVerify: `UNIVERSAL SECURITY PRINCIPLE: Never assume legitimacy without verification. Always recommend verification through independently confirmed official channels, regardless of apparent authenticity. Even when research suggests legitimacy, verification through alternative means is essential security practice.`,
+    noFalseResearch: `CRITICAL: Never fabricate research findings. Do not claim to have:
+    - "Checked official websites" when you cannot access current web content
+    - "Looked up domains" when you cannot perform real-time domain research
+    - "Verified phone numbers" when you cannot access current business directories
+    - "Found information" that you have not actually found
+    - "Researched" anything that you cannot actually research
+    Instead, be honest about your knowledge limitations and provide verification guidance.`,
     
+    alwaysVerify: `UNIVERSAL SECURITY PRINCIPLE: Always recommend verification through independently confirmed official channels, regardless of apparent authenticity. Be transparent about verification limitations.`,
+
     verificationMethods: `Recommended verification methods:
     - Use official phone numbers from your cards/statements/bills (not from the email)
     - Log into accounts through official websites (not email links)
@@ -136,12 +145,13 @@ const PROMPTS = {
 
     safetyNote: `SECURITY-FIRST RECOMMENDATIONS: Always include verification steps, even for legitimate communications. Emphasize that legitimate sources can be compromised and verification through alternative channels is a security best practice.`,
 
-    legitimateResponse: `For legitimate communications, provide security-conscious guidance:
-    - Confirm the communication appears legitimate based on research
-    - Explain that verification is still recommended as a security best practice
-    - Provide specific steps to verify through official channels for the organization mentioned
-    - Emphasize that even legitimate organizations can be compromised
-    - Give actionable verification steps appropriate to the specific situation and organization`,
+    legitimateResponse: `For communications that appear legitimate based on known patterns:
+    - Acknowledge if the communication follows standard business practices
+    - Be honest about verification limitations - do not claim false research
+    - Always recommend verification through official channels as security best practice
+    - Provide specific steps to verify through known official methods
+    - Emphasize that verification is recommended regardless of apparent legitimacy
+    - Focus on helpful verification guidance rather than unverifiable research claims`,
 
     threatSpecificGuidance: `Tailor recommendations to threat level:
     CRITICAL/HIGH: Report to security, do not interact, block sender
