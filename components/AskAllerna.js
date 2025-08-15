@@ -5,6 +5,8 @@ const AskAllerna = () => {
   const [input, setInput] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportText, setReportText] = useState('');
 
   const analyzeIncident = async () => {
     if (!input.trim()) {
@@ -80,6 +82,75 @@ const AskAllerna = () => {
     setAnalysis(null);
   };
 
+  const generateReport = () => {
+    const timestamp = new Date().toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short'
+    });
+
+    const reportId = `ALR-${Date.now().toString().slice(-8)}`;
+
+    const report = `=== ASK ALLERNA SECURITY ANALYSIS REPORT ===
+
+INCIDENT SUMMARY:
+${input.length > 200 ? input.substring(0, 200) + '...' : input}
+
+THREAT ASSESSMENT:
+- Threat Level: ${analysis.threatLevel}
+- Risk Score: ${analysis.riskScore}/100
+- Classification: ${analysis.incidentType}
+
+IMMEDIATE ACTION REQUIRED:
+${analysis.immediateAction}
+
+KEY FINDINGS:
+${analysis.redFlags.map(flag => `• ${flag}`).join('\n')}
+
+RESEARCH FINDINGS:
+${analysis.researchFindings ? analysis.researchFindings.map(finding => `• ${finding}`).join('\n') : '• No specific research findings available'}
+
+DETAILED ANALYSIS:
+${analysis.explanation}
+
+RECOMMENDED NEXT STEPS:
+${analysis.nextSteps.map((step, index) => `${index + 1}. ${step}`).join('\n')}
+
+REPORT DETAILS:
+- Generated: ${timestamp}
+- Report ID: ${reportId}
+- Platform: Ask Allerna Security Analysis Platform
+
+IMPORTANT DISCLAIMER:
+This analysis is for informational purposes only. Always verify through 
+official channels and follow your organization's security protocols.
+
+--- END OF REPORT ---`;
+
+    setReportText(report);
+    setShowReport(true);
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(reportText);
+      alert('Report copied to clipboard!');
+    } catch (err) {
+      const textArea = document.createElement('textarea');
+      textArea.value = reportText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Report copied to clipboard!');
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
       <style dangerouslySetInnerHTML={{
@@ -151,12 +222,20 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Security Analysis Results</h2>
-            <button
-              onClick={clearAnalysis}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg"
-            >
-              New Analysis
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={generateReport}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2"
+              >
+                📄 Generate Report
+              </button>
+              <button
+                onClick={clearAnalysis}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg"
+              >
+                New Analysis
+              </button>
+            </div>
           </div>
 
           {/* Special UI for insufficient information */}
@@ -335,6 +414,52 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {showReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                📄 Security Analysis Report
+              </h3>
+              <button
+                onClick={() => setShowReport(false)}
+                className="text-white hover:text-gray-200 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-4 flex gap-2">
+                <button
+                  onClick={copyToClipboard}
+                  className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg flex items-center gap-2"
+                >
+                  📋 Copy to Clipboard
+                </button>
+                <button
+                  onClick={() => setShowReport(false)}
+                  className="px-4 py-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
+              
+              <div className="bg-gray-50 border rounded-lg p-4 max-h-96 overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm font-mono text-gray-800">
+                  {reportText}
+                </pre>
+              </div>
+              
+              <div className="mt-4 text-sm text-gray-600">
+                <p>💡 <strong>Tip:</strong> Click "Copy to Clipboard" then paste this report into your IT ticketing system, email, or documentation.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
