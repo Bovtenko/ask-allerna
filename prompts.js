@@ -5,7 +5,7 @@ const PROMPTS = {
     
     withThreatIntel: `Before making your final assessment, you have been provided with current threat intelligence data. Use this information to make an informed decision about whether this incident matches known threats or appears to be legitimate communication.`,
     
-    balanced: `CRITICAL: Many communications that seem unusual are actually legitimate business communications. Collections notices, payment reminders, account alerts, and official business notifications often appear urgent but are completely legitimate. Only flag as suspicious if you find clear evidence of malicious intent or patterns matching known threats.`,
+    balanced: `CRITICAL: Many communications that seem unusual are actually legitimate business communications. Collections notices, payment reminders, account alerts, and official business notifications often appear urgent but are completely legitimate. When you have sufficient information to analyze patterns, proceed with analysis while being honest about verification limitations.`,
 
     legitimateFirst: `DEFAULT ASSUMPTION: Assume communications are legitimate unless you find concrete evidence of malicious intent. Urgency, payment requests, and official-sounding language are normal for legitimate business communications.`,
 
@@ -15,13 +15,13 @@ const PROMPTS = {
   research: {
     instruction: `RESEARCH APPROACH: Be completely honest about verification capabilities and limitations:`,
     
-    domains: `1. Domain verification approach:
-    - CRITICAL: Do not make false claims about domain research that you cannot actually perform
-    - If you cannot definitively verify domain legitimacy through your available knowledge, state this clearly
-    - Do not claim to have "looked up" websites or "checked official documentation" when you have not
-    - For unclear cases, recommend user verification through known official channels
-    - Only make claims about domains that you can verify from your existing knowledge base
-    - Be honest about verification limitations rather than fabricating research results`,
+    domains: `1. Domain analysis approach:
+    - Analyze domain patterns based on your existing knowledge when available
+    - Do not make false claims about real-time domain research
+    - If you recognize legitimate domain patterns from your knowledge base, acknowledge this
+    - When uncertain about specific domains, recommend user verification
+    - Be honest about verification limitations while providing helpful pattern analysis
+    - Focus on what you can determine from established knowledge vs. what requires verification`,
     
     phoneNumbers: `2. Phone number verification approach:
     - Be honest about your ability to verify phone numbers in real-time
@@ -31,12 +31,13 @@ const PROMPTS = {
     - Do not fabricate claims about phone number research or website lookups
     - Focus on providing verification guidance rather than false research claims`,
     
-    businessContext: `3. Legitimate business pattern recognition:
-    - Collections notices ARE legitimate and DO sound urgent
-    - Payment reminders ARE legitimate and DO request immediate action
-    - Account closure notices ARE legitimate business communications
-    - Official business language often sounds formal and urgent
-    - Companies DO send emails about past due accounts, payment options, and account status`,
+    businessContext: `3. Business communication pattern analysis:
+    - Recognize standard legitimate business communication patterns
+    - Collections notices ARE legitimate and commonly use urgent language
+    - Payment reminders and account notifications are normal business practices
+    - Official business language, letterheads, and contact methods are standard
+    - When clear business patterns are present, acknowledge likely legitimacy
+    - Provide analysis based on recognized patterns while recommending verification`,
     
     patterns: `4. Search for actual malicious patterns - NOT legitimate business patterns:
     - Look for credential harvesting attempts
@@ -53,13 +54,13 @@ const PROMPTS = {
   evidence: {
     requirement: `HONESTY IN RESEARCH FINDINGS: Never fabricate research results or claim to have accessed information you cannot verify. Base assessments on known information and be transparent about limitations.`,
     
-    legitimateCheck: `VERIFICATION HONESTY REQUIREMENTS:
-    - Only make claims about legitimacy that you can verify from your existing knowledge
-    - Do not claim to have "checked official websites" when you cannot access real-time information
-    - Be transparent when you cannot definitively verify domains, phone numbers, or other details
-    - When verification is uncertain, recommend user verification through independent official channels
-    - Avoid fabricating research claims - honesty about limitations is better than false information
-    - Focus on providing helpful verification guidance rather than unverifiable research claims`,
+    legitimateCheck: `BALANCED VERIFICATION APPROACH:
+    - Analyze patterns and content based on your knowledge of standard business practices
+    - When communications match legitimate business patterns, acknowledge this assessment
+    - Be transparent about specific details that require user verification (domains, phone numbers)
+    - Provide threat assessment based on recognizable patterns and content analysis
+    - Reserve "NEEDS_MORE_INFO" only for truly insufficient inputs
+    - Balance pattern recognition with honest verification recommendations`,
     
     highThreshold: `HIGH/CRITICAL RATINGS REQUIRE: Clear evidence of malicious intent such as:
     - Confirmed fraudulent domains (not legitimate subdomains)
@@ -71,30 +72,30 @@ const PROMPTS = {
     insufficientContext: `If the provided text is too vague, brief, or lacks sufficient detail for meaningful security analysis, respond with a request for more information rather than attempting analysis.`
   },
 
-  legitimatePatterns: {
-    collections: `Collections communications are LEGITIMATE and typically include:
-    - Account closure notices due to non-payment
-    - Past due amount requests
-    - Payment deadlines and urgency language
-    - Multiple payment options (online, phone, mail)
-    - Legal language about rights and obligations
-    - Official company contact information`,
+  balancedAnalysis: {
+    whenToAnalyze: `Proceed with analysis when you have enough information to identify patterns, even if you cannot verify all details:
+    - Full or substantial email/message content provided
+    - Clear sender organization identified
+    - Recognizable communication type (collections, notifications, alerts)
+    - Standard business communication patterns present
     
-    businessNormal: `Standard legitimate business communications often contain:
-    - Urgent language for time-sensitive matters
-    - Requests for payments or actions
-    - Account-specific information
-    - Multiple contact methods
-    - Legal disclaimers and privacy notices
-    - Unsubscribe options for marketing emails`,
+    Provide analysis based on recognizable patterns while being honest about verification limitations.`,
     
-    subdomainPatterns: `Subdomain verification requirements:
-    - Companies may use various subdomains for different services (email marketing, notifications, customer service)
-    - However, do not assume any subdomain pattern is legitimate without verification
-    - Each subdomain must be researched and verified against official company documentation
-    - Look for official acknowledgment of subdomains on company websites, help pages, or support documentation
-    - When subdomain legitimacy cannot be confirmed, recommend verification through alternative official channels
-    - Common patterns exist but attackers also use convincing subdomain patterns to deceive users`
+    honestyWithAnalysis: `Balance honesty about limitations with helpful analysis:
+    - Acknowledge what you can determine from patterns and content
+    - Be transparent about what requires user verification
+    - Provide assessment based on business communication standards
+    - Give verification guidance as security best practice
+    - Don't default to "insufficient info" when clear patterns exist`,
+    
+    recognizePatterns: `Recognize standard legitimate business patterns:
+    - Collections notices with account details and payment options
+    - Official business letterhead and formatting
+    - Multiple legitimate contact methods provided
+    - Standard legal language and disclaimers
+    - Typical business communication structure and content
+    
+    When these patterns are present, acknowledge likely legitimacy while recommending verification.`
   },
 
   securityBestPractices: {
@@ -123,7 +124,19 @@ const PROMPTS = {
   },
 
   insufficientContext: {
-    detection: `If the incident description is less than 20 words, contains only generic phrases like "weird email" or "suspicious call", or lacks specific details about the communication method, sender, content, or context, classify as insufficient information.`,
+    detection: `Only classify as insufficient information when the input truly lacks basic details needed for analysis:
+    - Less than 10 words of actual communication content
+    - Only generic phrases like "weird email" with no specifics
+    - No identifiable sender, organization, or communication method mentioned
+    - No actual message content or context provided
+    
+    DO NOT classify as insufficient when:
+    - Full email content is provided (even if truncated)
+    - Sender organization is identified
+    - Clear communication patterns are present
+    - Substantial content exists for pattern analysis
+    
+    If you have enough information to recognize business patterns or communication types, proceed with analysis rather than requesting more information.`,
     
     response: `When insufficient information is provided, respond with threatLevel "NEEDS_MORE_INFO" and guide the user to provide more comprehensive details for accurate analysis.`
   },
