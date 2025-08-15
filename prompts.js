@@ -5,27 +5,89 @@ const PROMPTS = {
     
     withThreatIntel: `Before making your final assessment, you have been provided with current threat intelligence data. Use this information to make an informed decision about whether this incident matches known threats or appears to be legitimate communication.`,
     
-    balanced: `Important: Many communications that seem unusual are actually legitimate. Only flag as suspicious if you find clear evidence of malicious intent or patterns matching known threats.`
+    balanced: `CRITICAL: Many communications that seem unusual are actually legitimate business communications. Collections notices, payment reminders, account alerts, and official business notifications often appear urgent but are completely legitimate. Only flag as suspicious if you find clear evidence of malicious intent or patterns matching known threats.`,
+
+    legitimateFirst: `DEFAULT ASSUMPTION: Assume communications are legitimate unless you find concrete evidence of malicious intent. Urgency, payment requests, and official-sounding language are normal for legitimate business communications.`
   },
 
   research: {
-    instruction: `THREAT INTELLIGENCE RESEARCH REQUIRED: Before analyzing, research the following:`,
+    instruction: `COMPREHENSIVE VERIFICATION REQUIRED: Before flagging anything as suspicious, thoroughly research:`,
     
-    domains: `1. Verify any domains mentioned - check if they are legitimate business domains or appear in recent threat reports`,
+    domains: `1. Domain verification - Verify domains AND subdomains thoroughly:
+    - Check if root domain belongs to legitimate organization (e.g., chase.com for Chase Bank)
+    - Verify if subdomains are official (e.g., e.chase.com, mail.chase.com, alerts.chase.com are legitimate Chase subdomains)
+    - Only flag domains as suspicious if they are clear typosquatting or have no connection to claimed organization
+    - Remember: companies use many legitimate subdomains for email marketing, notifications, and services`,
     
-    phoneNumbers: `2. Research any phone numbers - look for scam reports or legitimate business associations`,
+    phoneNumbers: `2. Phone number verification - Cross-reference with multiple sources:
+    - Check official company websites and directories
+    - Verify against known legitimate business numbers, not just scam databases
+    - Collections and customer service departments often have specialized phone numbers
+    - Only flag numbers as suspicious if they have clear evidence of being used in scams`,
     
-    patterns: `3. Search for similar phishing/scam campaigns that match the language patterns, urgency tactics, or social engineering techniques used`,
+    businessContext: `3. Legitimate business pattern recognition:
+    - Collections notices ARE legitimate and DO sound urgent
+    - Payment reminders ARE legitimate and DO request immediate action
+    - Account closure notices ARE legitimate business communications
+    - Official business language often sounds formal and urgent
+    - Companies DO send emails about past due accounts, payment options, and account status`,
     
-    currentThreats: `4. Check for current threat campaigns targeting the mentioned organization or industry`
+    patterns: `4. Search for actual malicious patterns - NOT legitimate business patterns:
+    - Look for credential harvesting attempts
+    - Search for known phishing campaigns with similar exact wording
+    - Identify attempts to steal personal information beyond normal business needs
+    - Flag only communications that match known malicious tactics, not standard business practices`,
+    
+    currentThreats: `5. Current threat intelligence:
+    - Check for ongoing campaigns targeting the specific organization mentioned
+    - Look for recent reports of domain spoofing or impersonation
+    - Verify if there are known attacks mimicking this type of communication`
   },
 
   evidence: {
-    requirement: `Base your assessment on EVIDENCE, not assumptions. For any suspicious rating, cite specific findings from your research.`,
+    requirement: `EVIDENCE-BASED ASSESSMENT ONLY: Base your assessment strictly on concrete evidence, not assumptions. For any suspicious rating above LOW, you must cite specific research findings that prove malicious intent.`,
     
-    legitimateCheck: `If research shows the sender/domain/pattern is legitimate, rate accordingly even if the message seems unusual.`,
+    legitimateCheck: `MANDATORY LEGITIMATE VERIFICATION: Before flagging as suspicious, you MUST verify:
+    - Is the domain/subdomain legitimately owned by the claimed organization?
+    - Are the phone numbers official business numbers?
+    - Does this match standard business communication patterns?
+    - Is this a normal business process (collections, billing, notifications)?
+    If research confirms legitimacy, rate as SAFE or LOW regardless of urgency or unusual appearance.`,
+    
+    highThreshold: `HIGH/CRITICAL RATINGS REQUIRE: Clear evidence of malicious intent such as:
+    - Confirmed fraudulent domains (not legitimate subdomains)
+    - Attempts to harvest credentials beyond normal business needs
+    - Known scam phone numbers (not legitimate business numbers)
+    - Exact matches to known phishing campaigns
+    - Requests for information companies would never ask for`,
     
     insufficientContext: `If the provided text is too vague, brief, or lacks sufficient detail for meaningful security analysis, respond with a request for more information rather than attempting analysis.`
+  },
+
+  legitimatePatterns: {
+    collections: `Collections communications are LEGITIMATE and typically include:
+    - Account closure notices due to non-payment
+    - Past due amount requests
+    - Payment deadlines and urgency language
+    - Multiple payment options (online, phone, mail)
+    - Legal language about rights and obligations
+    - Official company contact information`,
+    
+    businessNormal: `Standard legitimate business communications often contain:
+    - Urgent language for time-sensitive matters
+    - Requests for payments or actions
+    - Account-specific information
+    - Multiple contact methods
+    - Legal disclaimers and privacy notices
+    - Unsubscribe options for marketing emails`,
+    
+    subdomainPatterns: `Legitimate companies commonly use subdomains like:
+    - e.company.com (email marketing)
+    - mail.company.com (email services)
+    - alerts.company.com (notifications)
+    - noreply.company.com (automated emails)
+    - accounts.company.com (account services)
+    These are NORMAL and LEGITIMATE when the root domain belongs to the company.`
   },
 
   insufficientContext: {
@@ -48,7 +110,13 @@ const PROMPTS = {
   "nextSteps": ["Report to IT security if suspicious", "other", "specific", "actions"]
 }`,
 
-    safetyNote: `CRITICAL: For ANY suspicious activity, the FIRST recommendation must ALWAYS be to report to IT security/company security team immediately.`,
+    safetyNote: `IMPORTANT: Only recommend reporting to IT security if there is actual evidence of malicious intent. For legitimate business communications, recommend normal business actions like contacting the company through official channels if verification is needed.`,
+
+    legitimateResponse: `For legitimate communications, provide helpful guidance:
+    - Confirm the communication appears legitimate based on research
+    - Suggest verifying through official channels if the user has concerns
+    - Provide constructive next steps appropriate for legitimate business communications
+    - Do not create unnecessary alarm about normal business processes`,
 
     insufficientInfoTemplate: `For insufficient information cases, use this structure:
 {
