@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Send, Shield, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, Send, Shield, CheckSquare, Eye, HelpCircle } from 'lucide-react';
 
 const AskAllerna = () => {
   const [input, setInput] = useState('');
-  const [analysis, setAnalysis] = useState(null);
+  const [guidance, setGuidance] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
@@ -31,54 +31,29 @@ const AskAllerna = () => {
       }
 
       const data = await response.json();
-      setAnalysis(data);
+      setGuidance(data);
       
     } catch (error) {
       console.error("Analysis error:", error);
-      setAnalysis({
-        threatLevel: "ERROR",
-        incidentType: "Analysis Failed",
-        immediateAction: "Try again or contact support",
-        redFlags: ["System temporarily unavailable"],
-        researchFindings: ["System error occurred"],
-        explanation: `Error: ${error.message}. Please try again or contact support if the problem persists.`,
-        nextSteps: [
-          "Report this incident to your IT security team or designated security personnel immediately",
-          "Check your internet connection",
-          "Try submitting again", 
-          "Contact support if issues continue"
-        ]
+      setGuidance({
+        whatWeObserved: "System error occurred while processing your request",
+        redFlagsToConsider: ["System temporarily unavailable"],
+        verificationSteps: [
+          "Try submitting again",
+          "If issues persist, contact support",
+          "Continue to exercise caution with the suspicious communication"
+        ],
+        whyVerificationMatters: "Even when our analysis tools are unavailable, verification through official channels is always the safest approach.",
+        organizationSpecificGuidance: "Contact the organization directly using official contact methods to verify any suspicious communications."
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const getThreatColor = (level) => {
-    const colors = {
-      'CRITICAL': 'text-red-600 bg-red-100',
-      'HIGH': 'text-orange-600 bg-orange-100', 
-      'MEDIUM': 'text-yellow-600 bg-yellow-100',
-      'LOW': 'text-blue-600 bg-blue-100',
-      'LEGITIMATE': 'text-green-600 bg-green-100',
-      'ERROR': 'text-gray-600 bg-gray-100',
-      'NEEDS_MORE_INFO': 'text-blue-600 bg-blue-100'
-    };
-    return colors[level] || 'text-gray-600 bg-gray-100';
-  };
-
-  const getThreatIcon = (level) => {
-    if (level === 'CRITICAL' || level === 'HIGH') return <XCircle className="w-5 h-5" />;
-    if (level === 'MEDIUM') return <AlertTriangle className="w-5 h-5" />;
-    if (level === 'LOW') return <Clock className="w-5 h-5" />;
-    if (level === 'LEGITIMATE') return <CheckCircle className="w-5 h-5" />;
-    if (level === 'NEEDS_MORE_INFO') return <AlertTriangle className="w-5 h-5" />;
-    return <AlertTriangle className="w-5 h-5" />;
-  };
-
   const clearAnalysis = () => {
     setInput('');
-    setAnalysis(null);
+    setGuidance(null);
   };
 
   const generateReport = () => {
@@ -95,38 +70,34 @@ const AskAllerna = () => {
 
     const reportId = `ALR-${Date.now().toString().slice(-8)}`;
 
-    const report = `=== ASK ALLERNA SECURITY ANALYSIS REPORT ===
+    const report = `=== ASK ALLERNA VERIFICATION GUIDANCE REPORT ===
 
-INCIDENT SUMMARY:
+COMMUNICATION SUMMARY:
 ${input.length > 200 ? input.substring(0, 200) + '...' : input}
 
-THREAT ASSESSMENT:
-- Threat Level: ${analysis.threatLevel}
-- Classification: ${analysis.incidentType}
+WHAT WE OBSERVED:
+${guidance.whatWeObserved}
 
-IMMEDIATE ACTION REQUIRED:
-${analysis.immediateAction}
+RED FLAGS TO CONSIDER:
+${guidance.redFlagsToConsider.map(flag => `• ${flag}`).join('\n')}
 
-KEY FINDINGS:
-${analysis.redFlags.map(flag => `• ${flag}`).join('\n')}
+VERIFICATION STEPS:
+${guidance.verificationSteps.map((step, index) => `${index + 1}. ${step}`).join('\n')}
 
-RESEARCH FINDINGS:
-${analysis.researchFindings ? analysis.researchFindings.map(finding => `• ${finding}`).join('\n') : '• No specific research findings available'}
+WHY VERIFICATION MATTERS:
+${guidance.whyVerificationMatters}
 
-DETAILED ANALYSIS:
-${analysis.explanation}
-
-RECOMMENDED NEXT STEPS:
-${analysis.nextSteps.map((step, index) => `${index + 1}. ${step}`).join('\n')}
+ORGANIZATION-SPECIFIC GUIDANCE:
+${guidance.organizationSpecificGuidance}
 
 REPORT DETAILS:
 - Generated: ${timestamp}
 - Report ID: ${reportId}
-- Platform: Ask Allerna Security Analysis Platform
+- Platform: Ask Allerna Verification Guidance
 
-IMPORTANT DISCLAIMER:
-This analysis is for informational purposes only. Always verify through 
-official channels and follow your organization's security protocols.
+IMPORTANT NOTE:
+This guidance is educational and does not constitute a security assessment. 
+Always verify suspicious communications through official channels.
 
 --- END OF REPORT ---`;
 
@@ -175,20 +146,20 @@ official channels and follow your organization's security protocols.
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Ask Allerna</h1>
-          <p className="text-gray-600">Social Engineering Detection Platform</p>
+          <p className="text-gray-600">Communication Verification Guidance</p>
         </div>
         
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Paste suspicious content or describe the incident:
+              Share the suspicious communication for verification guidance:
             </label>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Copy and paste suspicious emails, describe phone calls, text messages, or any other potential social engineering attempts. Remember to redact sensitive information as noted below.
+              placeholder="Copy and paste suspicious emails, describe phone calls, text messages, or any other communications you'd like verification guidance for.
 
-Example: I received an email from 'support@[BANK-REDACTED].com' saying my account will be suspended unless I click a link and verify my login within 24 hours. The sender claimed to be from [BANK-REDACTED] security team and said I need to update my information immediately or lose access to my account..."
+Example: I received an email from 'support@bank-alerts.com' saying my account will be suspended unless I click a link and verify my login within 24 hours. The sender claimed to be from my bank and said I need to update my information immediately or lose access to my account..."
               className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
           </div>
@@ -203,12 +174,12 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
               {isAnalyzing ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Ask Allerna to Analyze
+                  Getting Verification Guidance
                 </>
               ) : (
                 <>
-                  <Send className="w-5 h-5" />
-                  Ask Allerna to Analyze
+                  <HelpCircle className="w-5 h-5" />
+                  Get Verification Guidance
                 </>
               )}
             </div>
@@ -216,10 +187,10 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
         </div>
       </div>
 
-      {analysis && (
+      {guidance && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Security Analysis Results</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Verification Guidance</h2>
             <div className="flex gap-2">
               <button
                 onClick={generateReport}
@@ -236,181 +207,83 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
             </div>
           </div>
 
-          {/* Special UI for insufficient information */}
-          {analysis.threatLevel === 'NEEDS_MORE_INFO' ? (
-            <div className="space-y-6">
-              {/* Friendly header */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                <div className="text-6xl mb-4">📝</div>
-                <h3 className="text-2xl font-bold text-blue-800 mb-2">We need more details to help you</h3>
-                <p className="text-blue-700 text-lg">
-                  To provide an accurate security analysis, please share more information about the suspicious communication.
-                </p>
-              </div>
-
-              {/* What to include section */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-                <h4 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-2">
-                  <span>💡</span> Please include these details:
-                </h4>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 font-bold">📧</span>
-                      <div>
-                        <div className="font-medium text-blue-800">Sender Information</div>
-                        <div className="text-blue-600 text-sm">Email address, phone number, or claimed organization</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 font-bold">💬</span>
-                      <div>
-                        <div className="font-medium text-blue-800">Complete Message</div>
-                        <div className="text-blue-600 text-sm">Full email text, call transcript, or message content</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 font-bold">🔗</span>
-                      <div>
-                        <div className="font-medium text-blue-800">Links & Attachments</div>
-                        <div className="text-blue-600 text-sm">Any URLs, files, or downloads mentioned</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 font-bold">🚨</span>
-                      <div>
-                        <div className="font-medium text-blue-800">What Seemed Suspicious</div>
-                        <div className="text-blue-600 text-sm">What specifically raised your concern</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 font-bold">⏰</span>
-                      <div>
-                        <div className="font-medium text-blue-800">Context & Timing</div>
-                        <div className="text-blue-600 text-sm">When/how you received it, was it unsolicited</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 font-bold">🎯</span>
-                      <div>
-                        <div className="font-medium text-blue-800">Requests Made</div>
-                        <div className="text-blue-600 text-sm">Any requests for passwords, info, or actions</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Example section */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                <h4 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">
-                  <span>✅</span> Good example:
-                </h4>
-                <div className="bg-white border border-green-300 rounded-lg p-4 text-sm text-gray-700">
-                  <span className="font-mono">
-                    "I received an email from 'security@chase-verify.net' claiming to be Chase Bank. 
-                    The subject was 'URGENT: Account Suspended' and it said I need to click a link 
-                    to verify my account within 24 hours or it will be closed. The link was 
-                    https://chase-security-update.com/verify. I found it suspicious because 
-                    I didn't recognize the domain and the email felt very urgent and threatening."
-                  </span>
-                </div>
-              </div>
-
-              {/* Action button */}
-              <div className="text-center">
-                <button
-                  onClick={clearAnalysis}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
-                >
-                  <span>🔄</span>
-                  Try Again with More Details
-                </button>
-              </div>
+          {/* Main Guidance Content */}
+          <div className="space-y-6">
+            
+            {/* What We Observed */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-blue-800 mb-3 flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                What We Observed
+              </h3>
+              <p className="text-blue-700 leading-relaxed">{guidance.whatWeObserved}</p>
             </div>
-          ) : (
-            /* Regular analysis results */
-            <div>
-              <div className={`flex items-center gap-3 p-4 rounded-lg mb-6 ${getThreatColor(analysis.threatLevel)}`}>
-                {getThreatIcon(analysis.threatLevel)}
-                <div>
-                  <div className="font-bold text-xl">Threat Level: {analysis.threatLevel}</div>
-                </div>
-              </div>
 
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-                <div className="font-bold text-yellow-800 mb-2">⚠️ Allerna Security Assessment:</div>
-                <div className="text-yellow-700 text-lg">{analysis.immediateAction}</div>
-                <div className="text-sm text-yellow-600 mt-2">
-                  <strong>Important:</strong> This assessment is for informational purposes only. 
-                  Always verify through your organization's official channels and follow company policies.
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h3 className="font-bold text-lg mb-3">Incident Classification</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="font-medium">{analysis.incidentType}</div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-lg mb-3">🚩 Warning Signs Detected</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <ul className="list-disc list-inside space-y-1">
-                      {analysis.redFlags.map((flag, index) => (
-                        <li key={index} className="text-sm">{flag}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {analysis.researchFindings && (
-                <div className="grid md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <h3 className="font-bold text-lg mb-3">🔍 Research Findings</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <ul className="list-disc list-inside space-y-1">
-                        {analysis.researchFindings.map((finding, index) => (
-                          <li key={index} className="text-sm">{finding}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-6">
-                <h3 className="font-bold text-lg mb-3">📋 Detailed Security Analysis</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-gray-700 leading-relaxed">{analysis.explanation}</p>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-bold text-lg mb-3 text-blue-800">🛡️ Allerna Recommendations</h3>
-                <div className="text-sm text-blue-700 mb-3">
-                  <strong>Note:</strong> These are general recommendations based on common security practices. 
-                  Always follow your organization's specific policies and procedures.
-                </div>
-                <ol className="list-decimal list-inside space-y-2">
-                  {analysis.nextSteps.map((step, index) => (
-                    <li key={index} className="text-blue-800">{step}</li>
-                  ))}
-                </ol>
-              </div>
+            {/* Red Flags to Consider */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-amber-800 mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Red Flags to Consider
+              </h3>
+              <ul className="space-y-2">
+                {guidance.redFlagsToConsider.map((flag, index) => (
+                  <li key={index} className="text-amber-700 flex items-start gap-2">
+                    <span className="text-amber-600 mt-1">•</span>
+                    <span>{flag}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
+
+            {/* If You're Concerned - Main Action Section */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-green-800 mb-3 flex items-center gap-2">
+                <CheckSquare className="w-5 h-5" />
+                If You're Concerned, Here's What To Do
+              </h3>
+              <ol className="space-y-3">
+                {guidance.verificationSteps.map((step, index) => (
+                  <li key={index} className="text-green-700 flex items-start gap-3">
+                    <span className="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mt-0.5">
+                      {index + 1}
+                    </span>
+                    <span className="flex-1">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            {/* Organization-Specific Guidance */}
+            {guidance.organizationSpecificGuidance && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-purple-800 mb-3">
+                  🎯 Organization-Specific Guidance
+                </h3>
+                <p className="text-purple-700 leading-relaxed">{guidance.organizationSpecificGuidance}</p>
+              </div>
+            )}
+
+            {/* Why Verification Matters */}
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-indigo-800 mb-3">
+                🛡️ Why Verification Matters
+              </h3>
+              <p className="text-indigo-700 leading-relaxed">{guidance.whyVerificationMatters}</p>
+            </div>
+
+            {/* Trust Your Instincts - Enhanced */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-blue-800 mb-3">
+                🧠 Trust Your Security Instincts
+              </h3>
+              <p className="text-blue-700 leading-relaxed">
+                The fact that you're seeking verification guidance shows excellent security awareness. 
+                When something feels off, it often is. Your instinct to verify is exactly the right approach, 
+                regardless of how legitimate a communication might appear.
+              </p>
+            </div>
+
+          </div>
         </div>
       )}
 
@@ -420,7 +293,7 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
               <h3 className="text-xl font-bold flex items-center gap-2">
-                📄 Security Analysis Report
+                📄 Verification Guidance Report
               </h3>
               <button
                 onClick={() => setShowReport(false)}
@@ -453,107 +326,53 @@ Example: I received an email from 'support@[BANK-REDACTED].com' saying my accoun
               </div>
               
               <div className="mt-4 text-sm text-gray-600">
-                <p>💡 <strong>Tip:</strong> Click "Copy to Clipboard" then paste this report into your IT ticketing system, email, or documentation.</p>
+                <p>💡 <strong>Tip:</strong> Share this verification guidance with your IT team or use it to verify the communication through official channels.</p>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Trust Your Instincts Section - Moved to bottom */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-bold text-blue-800 mb-2">🧠 Trust Your Instincts</h3>
-        <p className="text-sm text-blue-700">
-          Social engineering is a complex problem that uses sophisticated techniques and psychological manipulation 
-          that are not always easy to detect. The fact that you are asking this question suggests that your intuition 
-          is telling you something is off. <strong>That human reaction is critical in social engineering defense.</strong> 
-          Your instincts are often the first line of defense against these attacks.
-        </p>
-      </div>
-
-      {/* Privacy & Data Protection Notice - Moved to bottom */}
+      {/* Privacy & Verification Notice */}
       <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <h3 className="font-bold text-amber-800 mb-2">🔒 Privacy & Data Protection Notice</h3>
+        <h3 className="font-bold text-amber-800 mb-2">🔒 About Our Verification Guidance</h3>
         <div className="text-sm text-amber-700 space-y-2">
           <p>
-            <strong>Important:</strong> This tool processes your content securely on our servers to provide analysis. 
-            No data is stored permanently, and all analysis is performed in real-time.
+            <strong>Our approach:</strong> We provide educational guidance to help you verify communications, 
+            but we don't make judgments about whether something is "safe" or "dangerous."
           </p>
           <p>
-            <strong>For maximum privacy:</strong> Remove or replace sensitive information before analysis:
+            <strong>Why verification matters:</strong> Even legitimate-looking communications can be spoofed. 
+            Independent verification through official channels is always the most secure approach.
           </p>
-          <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-            <li>Email addresses → "user@[REDACTED].com"</li>
-            <li>Phone numbers → "[PHONE-REDACTED]"</li>
-            <li>Names → "[NAME-REDACTED]"</li>
-            <li>Passwords/codes → "[CODE-REDACTED]"</li>
-            <li>Company names → "[COMPANY-REDACTED]"</li>
-            <li>Account numbers → "[ACCOUNT-REDACTED]"</li>
-          </ul>
-          <p className="text-xs">
-            <strong>The analysis will remain effective even with redacted information.</strong> 
-            Focus on preserving the suspicious language patterns and structure.
+          <p>
+            <strong>Privacy:</strong> Your communications are processed securely for analysis and are not stored permanently.
           </p>
         </div>
       </div>
 
       <div className="mt-6 bg-gray-100 border border-gray-300 rounded-lg p-6">
-        <h3 className="font-bold text-gray-800 mb-3">⚠️ Important Legal Disclaimer</h3>
+        <h3 className="font-bold text-gray-800 mb-3">⚠️ Important Disclaimer</h3>
         <div className="text-sm text-gray-700 space-y-3">
           <p>
-            <strong>This software is not intended to provide legal advice, professional security counsel, or definitive security assessments.</strong> 
-            This tool is designed to provide general information based solely on the factors you have entered and common cybersecurity patterns. 
-            It is not intended to prescribe specific actions that you must or should take.
+            <strong>This tool provides educational guidance only.</strong> We do not make determinations about 
+            the safety or legitimacy of communications. All verification should be done through official channels.
           </p>
           <p>
-            <strong>Always refer to your organization's policies, procedures, and qualified personnel when taking any action regarding potential security incidents.</strong> 
-            This analysis should supplement, not replace, your company's established security protocols, professional judgment, and expert consultation.
+            <strong>Always verify through official sources.</strong> Contact organizations directly using known 
+            official phone numbers, websites, and contact methods rather than relying on information from 
+            suspicious communications.
           </p>
           <p>
-            The information provided by this tool is for educational and informational purposes only. Users are solely responsible for 
-            evaluating the relevance and accuracy of any information provided and for any decisions or actions taken based on such information. 
-            We make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, 
-            or suitability of the information provided.
-          </p>
-          <p>
-            <strong>For actual security incidents or concerns, always follow your organization's official incident reporting procedures 
-            and contact appropriate authorities as required by your company's policies and applicable laws.</strong>
-          </p>
-          <p className="text-xs text-gray-600 border-t border-gray-300 pt-2 mt-3">
-            By using this tool, you acknowledge that you have read, understood, and agree to be bound by this disclaimer. 
-            You further acknowledge that any reliance upon the information provided is at your own risk.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-        <h3 className="font-bold text-red-800 mb-2">🔐 Privacy & Data Processing Disclosure</h3>
-        <div className="text-sm text-red-700 space-y-2">
-          <p>
-            <strong>Secure Processing:</strong> Content submitted through this tool is processed securely on our servers 
-            for analysis purposes only. No data is permanently stored or logged.
-          </p>
-          <p>
-            <strong>Data Retention:</strong> Analysis content is processed in real-time and not retained after your session ends. 
-            No personal information or analysis results are stored permanently.
-          </p>
-          <p>
-            <strong>Recommendation:</strong> Still avoid submitting highly confidential or sensitive personal information. 
-            When possible, redact specific details while preserving suspicious patterns for analysis.
-          </p>
-          <p>
-            <strong>Session Only:</strong> This application processes data only during your active session and does not 
-            create user accounts or permanent records.
-          </p>
-          <p className="text-xs text-red-600 font-medium">
-            By using this tool, you consent to the secure processing of your submitted content for security analysis purposes.
+            <strong>When in doubt, verify.</strong> Your security instincts are valuable. If something feels 
+            suspicious, verification is always the right approach.
           </p>
         </div>
       </div>
 
       <div className="mt-4 text-center text-sm text-gray-500">
-        <p>🔒 Ask Allerna helps identify potential social engineering attacks. Always verify suspicious communications through official channels.</p>
-        <p className="mt-1 text-xs">Powered by Allerna Security Intelligence</p>
+        <p>🔒 Ask Allerna provides verification guidance to help you make informed security decisions.</p>
+        <p className="mt-1 text-xs">Powered by Allerna Security Education</p>
       </div>
     </div>
   );
