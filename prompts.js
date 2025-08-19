@@ -12,7 +12,7 @@ IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', {
     
     withThreatIntel: `IMPORTANT: Use the web search tool to verify official contact information and search for recent scam reports. Search for the claimed organization's official contacts and any recent fraud reports.`,
     
-    balanced: `Important: Many communications that seem unusual are actually legitimate. Focus on educational red flags that users should be aware of, while encouraging independent verification through official channels. Pay attention to formatting inconsistencies that don't match organizational standards.`
+    balanced: `Important: Always include educational red flags in your analysis, even for legitimate communications. Users should learn to identify patterns that COULD be concerning in other contexts. Focus on educational value - if a communication appears legitimate after research, still mention formatting inconsistencies or verification points as learning opportunities. NEVER leave redFlagsToConsider empty.`
   },
 
   research: {
@@ -52,10 +52,26 @@ IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', {
     
     structure: `{
   "whatWeObserved": "Neutral, factual description of communication elements without judgment",
-  "redFlagsToConsider": ["ONLY include HIGH-CONFIDENCE red flags that clearly suggest potential fraud", "Focus on: suspicious domains, obvious spoofing, urgent threats, unusual requests for credentials", "AVOID: minor formatting differences, common business practices, regional variations"],
+  "redFlagsToConsider": ["MANDATORY: Always include 2-4 educational points", "Even for legitimate emails, mention formatting patterns users should watch for", "Focus on educational value - teach users what to look for in ANY communication"],
   "verificationSteps": ["Specific steps to independently verify this communication", "Official channels to contact", "Methods to confirm legitimacy"],
-  "whyVerificationMatters": "Educational explanation of why these patterns matter and how social engineering works",
-  "organizationSpecificGuidance": "Specific advice based on the type of organization mentioned (bank, government, tech company, etc.)"
+  "businessVerification": {
+    "claimedOrganization": "Name of organization claimed in communication",
+    "officialContacts": ["Official phone numbers found through web search", "Verified email domains from research", "Official website URLs"],
+    "comparisonFindings": ["How claimed contacts compare to official ones found online", "Web search verification results"],
+    "officialAlerts": ["Any scam warnings found through web search"]
+  },
+  "threatIntelligence": {
+    "knownScamReports": ["Scam reports found through web search about these contacts/domains", "Fraud database results from research"],
+    "similarIncidents": ["Similar scam patterns found through web search", "Recent campaigns using similar tactics"],
+    "securityAdvisories": ["Official warnings found through research"]
+  },
+  "currentThreatLandscape": {
+    "industryTrends": ["Current scam trends found through web search", "Recent attack patterns in this industry"],
+    "recentCampaigns": ["Ongoing phishing campaigns found through research", "Trending social engineering tactics"],
+    "officialWarnings": ["Recent security alerts found through web search"]
+  },
+  "whyVerificationMatters": "Educational explanation of why verification is important regardless of legitimacy",
+  "organizationSpecificGuidance": "Guidance based on web research about this organization's official practices"
 }`,
 
     safetyNote: `CRITICAL: Always emphasize verification through official channels rather than making definitive security judgments. Only flag STRONG indicators of potential fraud.`,
