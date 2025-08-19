@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Send, Shield, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
 
 const AskAllerna = () => {
@@ -8,6 +8,26 @@ const AskAllerna = () => {
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
   const [error, setError] = useState(null);
+  
+  // NEW: Progressive loading states
+  const [analysisStage, setAnalysisStage] = useState('');
+  const [visibleSections, setVisibleSections] = useState([]);
+
+  // NEW: Progressive section reveal effect
+  useEffect(() => {
+    if (analysis) {
+      // Reset visible sections when new analysis starts
+      setVisibleSections([]);
+      
+      const sections = ['observed', 'redFlags', 'verification', 'business', 'threat', 'landscape'];
+      
+      sections.forEach((section, index) => {
+        setTimeout(() => {
+          setVisibleSections(prev => [...prev, section]);
+        }, index * 700); // 700ms delay between each section
+      });
+    }
+  }, [analysis]);
 
   const analyzeIncident = async () => {
     if (!input.trim()) {
@@ -16,6 +36,14 @@ const AskAllerna = () => {
 
     setIsAnalyzing(true);
     setError(null);
+    setVisibleSections([]); // Reset sections
+    setAnalysisStage('Performing initial security assessment...');
+    
+    // NEW: Progress messages during analysis
+    const stage1 = setTimeout(() => setAnalysisStage('Verifying business contacts and official information...'), 8000);
+    const stage2 = setTimeout(() => setAnalysisStage('Researching threat intelligence and scam reports...'), 20000);
+    const stage3 = setTimeout(() => setAnalysisStage('Analyzing current threat landscape...'), 35000);
+    const stage4 = setTimeout(() => setAnalysisStage('Finalizing comprehensive security analysis...'), 45000);
     
     try {
       console.log('[UI] Starting analysis...');
@@ -63,7 +91,14 @@ const AskAllerna = () => {
         organizationSpecificGuidance: `System error: ${error.message}. Contact technical support if this persists.`
       });
     } finally {
+      // NEW: Clear all progress timeouts
+      clearTimeout(stage1);
+      clearTimeout(stage2);
+      clearTimeout(stage3);
+      clearTimeout(stage4);
+      
       setIsAnalyzing(false);
+      setAnalysisStage('');
     }
   };
 
@@ -71,6 +106,7 @@ const AskAllerna = () => {
     setInput('');
     setAnalysis(null);
     setError(null);
+    setVisibleSections([]); // NEW: Reset visible sections
   };
 
   const generateReport = () => {
@@ -193,6 +229,20 @@ official channels and follow your organization's security protocols.
         .animate-wave {
           animation: wave 6s linear infinite;
         }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
+        }
         `
       }} />
       
@@ -244,6 +294,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </div>
           )}
 
+          {/* UPDATED: Enhanced loading button with progress stages */}
           <button
             onClick={analyzeIncident}
             disabled={isAnalyzing || !input.trim()}
@@ -254,7 +305,12 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
               {isAnalyzing ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Analyzing with Real-time Intelligence...
+                  <div className="flex flex-col items-center">
+                    <span>Analyzing with Real-time Intelligence...</span>
+                    {analysisStage && (
+                      <span className="text-sm opacity-80 mt-1">{analysisStage}</span>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
@@ -267,6 +323,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
         </div>
       </div>
 
+      {/* UPDATED: Progressive loading sections */}
       {analysis && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
@@ -288,46 +345,52 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
           </div>
 
           {/* What We Observed */}
-          <div className="mb-6">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
-              <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                👁️ What We Observed
-              </h3>
-              <p className="text-blue-700">{analysis.whatWeObserved}</p>
+          {visibleSections.includes('observed') && (
+            <div className="mb-6 animate-fade-in">
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
+                <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                  👁️ What We Observed
+                </h3>
+                <p className="text-blue-700">{analysis.whatWeObserved}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Red Flags to Consider */}
-          <div className="mb-6">
-            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
-              <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
-                🚩 Red Flags to Consider
-              </h3>
-              <ul className="list-disc list-inside space-y-1 text-amber-700">
-                {analysis.redFlagsToConsider.map((flag, index) => (
-                  <li key={index}>{flag}</li>
-                ))}
-              </ul>
+          {visibleSections.includes('redFlags') && (
+            <div className="mb-6 animate-fade-in">
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
+                <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                  🚩 Red Flags to Consider
+                </h3>
+                <ul className="list-disc list-inside space-y-1 text-amber-700">
+                  {analysis.redFlagsToConsider.map((flag, index) => (
+                    <li key={index}>{flag}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Verification Steps */}
-          <div className="mb-6">
-            <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
-              <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
-                ✅ Verification Steps
-              </h3>
-              <ul className="list-decimal list-inside space-y-1 text-green-700">
-                {analysis.verificationSteps.map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ul>
+          {visibleSections.includes('verification') && (
+            <div className="mb-6 animate-fade-in">
+              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+                <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                  ✅ Verification Steps
+                </h3>
+                <ul className="list-decimal list-inside space-y-1 text-green-700">
+                  {analysis.verificationSteps.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Business Verification */}
-          {analysis.businessVerification && (
-            <div className="mb-6">
+          {visibleSections.includes('business') && analysis.businessVerification && (
+            <div className="mb-6 animate-fade-in">
               <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
                 <h3 className="font-bold text-cyan-800 mb-3 flex items-center gap-2">
                   🏢 Business Verification
@@ -375,8 +438,8 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
           )}
 
           {/* Threat Intelligence */}
-          {analysis.threatIntelligence && (
-            <div className="mb-6">
+          {visibleSections.includes('threat') && analysis.threatIntelligence && (
+            <div className="mb-6 animate-fade-in">
               <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
                 <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
                   🚨 Threat Intelligence
@@ -420,8 +483,8 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
           )}
 
           {/* Current Threat Landscape */}
-          {analysis.currentThreatLandscape && (
-            <div className="mb-6">
+          {visibleSections.includes('landscape') && analysis.currentThreatLandscape && (
+            <div className="mb-6 animate-fade-in">
               <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
                 <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
                   📊 Current Threat Landscape
@@ -465,8 +528,8 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
           )}
 
           {/* Organization-Specific Guidance */}
-          {analysis.organizationSpecificGuidance && (
-            <div className="mb-6">
+          {visibleSections.includes('landscape') && analysis.organizationSpecificGuidance && (
+            <div className="mb-6 animate-fade-in">
               <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-lg">
                 <h3 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
                   🏢 Organization-Specific Guidance
@@ -477,14 +540,16 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
           )}
 
           {/* Why Verification Matters */}
-          <div className="mb-6">
-            <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-lg">
-              <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
-                🎓 Why Verification Matters
-              </h3>
-              <p className="text-indigo-700">{analysis.whyVerificationMatters}</p>
+          {visibleSections.includes('landscape') && (
+            <div className="mb-6 animate-fade-in">
+              <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-lg">
+                <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                  🎓 Why Verification Matters
+                </h3>
+                <p className="text-indigo-700">{analysis.whyVerificationMatters}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -562,7 +627,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
       {/* Footer */}
       <div className="mt-4 text-center text-sm text-gray-500">
         <p>🔒 Ask Allerna helps you learn to identify social engineering patterns through real-time threat intelligence.</p>
-        <p className="mt-1 text-xs">Enhanced with Claude 3.5 Sonnet • Real-time Web Research • Educational Focus</p>
+        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Real-time Web Research • Educational Focus</p>
       </div>
     </div>
   );
