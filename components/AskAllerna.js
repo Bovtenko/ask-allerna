@@ -277,7 +277,7 @@ ANALYSIS DETAILS:
       <div className={`layout-transition ${isAnalysisMode ? 'md:grid md:grid-cols-2 md:gap-6' : ''}`}>
         
         {/* Left Column */}
-        <div className={`layout-transition ${isAnalysisMode ? 'md:h-screen md:sticky md:top-6' : ''}`}>
+        <div className={`layout-transition ${isAnalysisMode ? 'md:max-h-screen md:overflow-y-auto md:sticky md:top-6' : ''}`}>
           
           {/* Header */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -400,7 +400,7 @@ ANALYSIS DETAILS:
 
         {/* Right Column - Analysis Results */}
         {isAnalysisMode && (
-          <div className="layout-transition">
+          <div className="layout-transition md:max-h-screen md:overflow-y-auto">
             
             {/* Loading for Basic */}
             {isAnalyzing && analysisStage === 'basic' && (
@@ -546,6 +546,25 @@ ANALYSIS DETAILS:
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Footer Sections - Also show in analysis mode at bottom of right column */}
+            {isAnalysisMode && (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <h3 className="font-bold text-blue-800 mb-2">🧠 Trust Your Instincts</h3>
+                  <p className="text-sm text-blue-700">
+                    The fact that something felt "off" enough for you to check here shows your security awareness is working. 
+                    <strong> That human intuition is your first line of defense.</strong>
+                  </p>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <h3 className="font-bold text-amber-800 mb-2">🔒 Privacy & Data Protection</h3>
+                  <p className="text-sm text-amber-700">
+                    Two-tier processing with cost transparency. No data stored permanently.
+                  </p>
+                </div>
+              </>
             )}
           </div>
         )}
