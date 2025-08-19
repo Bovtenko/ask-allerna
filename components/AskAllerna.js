@@ -101,6 +101,46 @@ ${analysis.redFlagsToConsider.map(flag => `• ${flag}`).join('\n')}
 VERIFICATION STEPS:
 ${analysis.verificationSteps.map(step => `• ${step}`).join('\n')}
 
+${analysis.businessVerification ? `
+BUSINESS VERIFICATION:
+Organization Claimed: ${analysis.businessVerification.claimedOrganization}
+${analysis.businessVerification.officialContacts ? `
+Official Contacts:
+${analysis.businessVerification.officialContacts.map(contact => `• ${contact}`).join('\n')}` : ''}
+${analysis.businessVerification.comparisonFindings ? `
+Comparison Findings:
+${analysis.businessVerification.comparisonFindings.map(finding => `• ${finding}`).join('\n')}` : ''}
+${analysis.businessVerification.officialAlerts ? `
+Official Alerts:
+${analysis.businessVerification.officialAlerts.map(alert => `• ${alert}`).join('\n')}` : ''}
+` : ''}
+
+${analysis.threatIntelligence ? `
+THREAT INTELLIGENCE:
+${analysis.threatIntelligence.knownScamReports ? `
+Known Scam Reports:
+${analysis.threatIntelligence.knownScamReports.map(report => `• ${report}`).join('\n')}` : ''}
+${analysis.threatIntelligence.similarIncidents ? `
+Similar Incidents:
+${analysis.threatIntelligence.similarIncidents.map(incident => `• ${incident}`).join('\n')}` : ''}
+${analysis.threatIntelligence.securityAdvisories ? `
+Security Advisories:
+${analysis.threatIntelligence.securityAdvisories.map(advisory => `• ${advisory}`).join('\n')}` : ''}
+` : ''}
+
+${analysis.currentThreatLandscape ? `
+CURRENT THREAT LANDSCAPE:
+${analysis.currentThreatLandscape.industryTrends ? `
+Industry Trends:
+${analysis.currentThreatLandscape.industryTrends.map(trend => `• ${trend}`).join('\n')}` : ''}
+${analysis.currentThreatLandscape.recentCampaigns ? `
+Recent Campaigns:
+${analysis.currentThreatLandscape.recentCampaigns.map(campaign => `• ${campaign}`).join('\n')}` : ''}
+${analysis.currentThreatLandscape.officialWarnings ? `
+Official Warnings:
+${analysis.currentThreatLandscape.officialWarnings.map(warning => `• ${warning}`).join('\n')}` : ''}
+` : ''}
+
 WHY VERIFICATION MATTERS:
 ${analysis.whyVerificationMatters}
 
@@ -111,7 +151,7 @@ REPORT DETAILS:
 - Generated: ${timestamp}
 - Report ID: ${reportId}
 - Platform: Ask Allerna Security Education Platform
-- Analysis Engine: Claude 3.5 Sonnet with Real-time Intelligence
+- Analysis Engine: Claude Sonnet 4 with Real-time Threat Intelligence
 
 IMPORTANT DISCLAIMER:
 This analysis is for educational purposes only. Always verify through 
@@ -284,6 +324,145 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
               </ul>
             </div>
           </div>
+
+          {/* Business Verification */}
+          {analysis.businessVerification && (
+            <div className="mb-6">
+              <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
+                <h3 className="font-bold text-cyan-800 mb-3 flex items-center gap-2">
+                  🏢 Business Verification
+                </h3>
+                <div className="space-y-3 text-cyan-700">
+                  <div>
+                    <strong>Claimed Organization:</strong> {analysis.businessVerification.claimedOrganization}
+                  </div>
+                  
+                  {analysis.businessVerification.officialContacts && analysis.businessVerification.officialContacts.length > 0 && (
+                    <div>
+                      <strong>Official Contacts:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.businessVerification.officialContacts.map((contact, index) => (
+                          <li key={index}>{contact}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {analysis.businessVerification.comparisonFindings && analysis.businessVerification.comparisonFindings.length > 0 && (
+                    <div>
+                      <strong>Comparison Findings:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.businessVerification.comparisonFindings.map((finding, index) => (
+                          <li key={index}>{finding}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {analysis.businessVerification.officialAlerts && analysis.businessVerification.officialAlerts.length > 0 && (
+                    <div>
+                      <strong>Official Alerts:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.businessVerification.officialAlerts.map((alert, index) => (
+                          <li key={index}>{alert}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Threat Intelligence */}
+          {analysis.threatIntelligence && (
+            <div className="mb-6">
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
+                  🚨 Threat Intelligence
+                </h3>
+                <div className="space-y-3 text-red-700">
+                  {analysis.threatIntelligence.knownScamReports && analysis.threatIntelligence.knownScamReports.length > 0 && (
+                    <div>
+                      <strong>Known Scam Reports:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.threatIntelligence.knownScamReports.map((report, index) => (
+                          <li key={index}>{report}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {analysis.threatIntelligence.similarIncidents && analysis.threatIntelligence.similarIncidents.length > 0 && (
+                    <div>
+                      <strong>Similar Incidents:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.threatIntelligence.similarIncidents.map((incident, index) => (
+                          <li key={index}>{incident}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {analysis.threatIntelligence.securityAdvisories && analysis.threatIntelligence.securityAdvisories.length > 0 && (
+                    <div>
+                      <strong>Security Advisories:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.threatIntelligence.securityAdvisories.map((advisory, index) => (
+                          <li key={index}>{advisory}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Threat Landscape */}
+          {analysis.currentThreatLandscape && (
+            <div className="mb-6">
+              <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
+                  📊 Current Threat Landscape
+                </h3>
+                <div className="space-y-3 text-orange-700">
+                  {analysis.currentThreatLandscape.industryTrends && analysis.currentThreatLandscape.industryTrends.length > 0 && (
+                    <div>
+                      <strong>Industry Trends:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.currentThreatLandscape.industryTrends.map((trend, index) => (
+                          <li key={index}>{trend}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {analysis.currentThreatLandscape.recentCampaigns && analysis.currentThreatLandscape.recentCampaigns.length > 0 && (
+                    <div>
+                      <strong>Recent Campaigns:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.currentThreatLandscape.recentCampaigns.map((campaign, index) => (
+                          <li key={index}>{campaign}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {analysis.currentThreatLandscape.officialWarnings && analysis.currentThreatLandscape.officialWarnings.length > 0 && (
+                    <div>
+                      <strong>Official Warnings:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {analysis.currentThreatLandscape.officialWarnings.map((warning, index) => (
+                          <li key={index}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Organization-Specific Guidance */}
           {analysis.organizationSpecificGuidance && (

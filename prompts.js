@@ -16,15 +16,33 @@ IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', {
   },
 
   research: {
-    instruction: `REQUIRED: Use web search to research the following before providing analysis:`,
+    instruction: `REQUIRED: Use web search extensively to research the following before providing analysis:`,
     
-    domains: `1. Search for any domains mentioned - check recent security reports, domain reputation, and registration details`,
+    domains: `1. Search for any domains mentioned - check recent security reports, domain reputation, registration details, and official business verification`,
     
-    phoneNumbers: `2. Search for any phone numbers - look for recent scam reports or fraud databases`,
+    phoneNumbers: `2. Search for any phone numbers - look for recent scam reports, fraud databases, and official business directory listings`,
     
     patterns: `3. Search for similar attack patterns or social engineering campaigns that match the language/tactics used`,
     
-    currentThreats: `4. Search for current security advisories or threat reports related to the organization or industry mentioned`
+    currentThreats: `4. Search for current security advisories or threat reports related to the organization or industry mentioned`,
+    
+    businessVerification: `5. BUSINESS VERIFICATION: For each claimed organization, search for:
+    - Official website and contact information
+    - Legitimate phone numbers and email domains
+    - Recent scam reports targeting this organization
+    - Official social media accounts and verified contact methods`,
+    
+    threatIntelligence: `6. THREAT INTELLIGENCE: Search for known scams involving:
+    - The exact email addresses, phone numbers, or domains mentioned
+    - Similar tracking numbers, account numbers, or reference codes
+    - The specific sender names or company names claimed
+    - Recent fraud alerts mentioning these contact details`,
+    
+    industryTrends: `7. CURRENT SCAM TRENDS: Search for recent reports about:
+    - Current phishing campaigns in this industry (shipping, banking, etc.)
+    - Trending social engineering tactics being used this month
+    - Recent security advisories from official sources (CISA, FBI, etc.)
+    - Similar scam patterns reported in security blogs and news`
   },
 
   evidence: {

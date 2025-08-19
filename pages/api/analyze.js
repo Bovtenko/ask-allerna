@@ -24,9 +24,19 @@ export default async function handler(req, res) {
     }
 
     console.log('[API] Building prompt...');
+    
+    // Get current date for context
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
     // Build the complete prompt from components
     const fullPrompt = [
       PROMPTS.analysis.base,
+      `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
       PROMPTS.analysis.balanced,
       PROMPTS.research.instruction,
       PROMPTS.research.domains,
@@ -100,6 +110,11 @@ export default async function handler(req, res) {
       if (!analysis.verificationSteps) analysis.verificationSteps = [];
       if (!analysis.whyVerificationMatters) analysis.whyVerificationMatters = "Verification helps protect against social engineering";
       if (!analysis.organizationSpecificGuidance) analysis.organizationSpecificGuidance = "Follow your organization's security protocols";
+      
+      // Ensure new optional fields have proper structure
+      if (!analysis.businessVerification) analysis.businessVerification = null;
+      if (!analysis.threatIntelligence) analysis.threatIntelligence = null;
+      if (!analysis.currentThreatLandscape) analysis.currentThreatLandscape = null;
       
     } catch (parseError) {
       console.log('[API] JSON parsing failed:', parseError);
