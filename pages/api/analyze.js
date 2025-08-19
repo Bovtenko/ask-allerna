@@ -1,4 +1,4 @@
-import PROMPTS from '../../prompts.js';
+// pages/api/analyze.js - Updated for Two-Tier Analysis System
 
 export default async function handler(req, res) {
   console.log('[API] Request received:', req.method);
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { incident, analysisType = 'quick' } = req.body;
+    const { incident, analysisType = 'basic', basicResults = null } = req.body;
     console.log('[API] Incident length:', incident ? incident.length : 0);
     console.log('[API] Analysis type:', analysisType);
 
@@ -23,84 +23,89 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
-    console.log('[API] Building balanced prompt for analysis type:', analysisType);
+    console.log('[API] Building prompt for analysis type:', analysisType);
     
-    const currentDate = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    
-    // BALANCED: Adequate context but optimized length
     let fullPrompt;
+    let model;
     let maxTokens;
-    let maxSearches;
+    let tools = [];
     
-    if (analysisType === 'quick') {
-      fullPrompt = `You are a cybersecurity expert analyzing this communication for red flags.
-
-Communication: ${incident}
-
-Analyze for suspicious patterns and respond with ONLY this JSON:
-{
-  "whatWeObserved": "Brief factual description of the communication",
-  "redFlagsToConsider": ["Specific red flag 1", "Specific red flag 2", "Specific red flag 3"],
-  "verificationSteps": ["Specific verification step 1", "Specific verification step 2", "Specific verification step 3"],
-  "whyVerificationMatters": "Brief explanation of why verification is important",
-  "organizationSpecificGuidance": "Brief guidance based on organization mentioned"
-}`;
-      maxTokens = 400;
-      maxSearches = 0;
+    if (analysisType === 'basic') {
+      // BASIC ANALYSIS - Haiku 3.5 for cost efficiency
+      model = "claude-3-5-haiku-20241022";
+      maxTokens = 300;
       
-    } else if (analysisType === 'business') {
-      fullPrompt = `You are a cybersecurity expert. Use web search to verify the organization mentioned in this communication.
-
-Search for: 1) Official website and contacts 2) Company verification 3) Any scam warnings
+      fullPrompt = `You are a cybersecurity educator analyzing this communication for learning purposes.
 
 Communication: ${incident}
 
-Respond with ONLY this JSON:
+Provide educational analysis focusing on patterns users should recognize. Even if the communication seems legitimate, include educational red flags that users should watch for in similar situations.
+
+Respond with ONLY this JSON (no other text):
+{
+  "whatWeObserved": "Factual description of communication elements",
+  "redFlagsToConsider": ["Educational pattern 1", "Educational pattern 2", "Educational pattern 3"],
+  "verificationSteps": ["Specific step 1", "Specific step 2", "Specific step 3"],
+  "whyVerificationMatters": "Educational explanation of verification importance",
+  "organizationSpecificGuidance": "Basic guidance about claimed organization",
+  "analysisType": "basic",
+  "upgradeAvailable": true
+}`;
+
+    } else if (analysisType === 'advanced') {
+      // ADVANCED ANALYSIS - Sonnet 4 with web search
+      model = "claude-sonnet-4-20250514";
+      maxTokens = 800;
+      tools = [{
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 5
+      }];
+
+      const basicContext = basicResults ? `
+Previous basic analysis found:
+- Observations: ${basicResults.whatWeObserved}
+- Red flags: ${basicResults.redFlagsToConsider?.join(', ')}
+` : '';
+
+      fullPrompt = `You are a cybersecurity expert conducting detailed verification analysis.
+
+${basicContext}
+
+Communication: ${incident}
+
+Use web search to:
+1. Verify claimed organization's official contacts
+2. Search for scam reports about this organization
+3. Find current threat intelligence
+4. Look for similar attack patterns
+
+Respond with ONLY this JSON (no other text):
 {
   "businessVerification": {
-    "claimedOrganization": "Name of organization claimed",
-    "officialContacts": ["Official contact 1", "Official contact 2"],
-    "comparisonFindings": ["How claimed contacts compare to official ones"],
-    "officialAlerts": ["Any scam warnings found"]
-  }
-}`;
-      maxTokens = 500;
-      maxSearches = 2;
-      
-    } else if (analysisType === 'threats') {
-      // KEEP: This is working perfectly, don't change
-      fullPrompt = `Search for current scam reports matching this pattern. Find specific recent cases and statistics.
-
-Key searches: "WhatsApp job scam 2024", "employment fraud reports", "FTC job scam warnings"
-
-Communication: ${incident}
-
-Find SPECIFIC data, not generic advice. JSON response:
-{
+    "claimedOrganization": "Organization name",
+    "officialContacts": ["Contact 1", "Contact 2"],
+    "comparisonFindings": ["Finding 1", "Finding 2"],
+    "officialAlerts": ["Alert 1", "Alert 2"]
+  },
   "threatIntelligence": {
-    "knownScamReports": ["specific report 1", "specific report 2"],
-    "similarIncidents": ["specific incident 1", "specific incident 2"],
-    "securityAdvisories": ["specific advisory 1", "specific advisory 2"]
+    "knownScamReports": ["Report 1", "Report 2"],
+    "similarIncidents": ["Incident 1", "Incident 2"],
+    "securityAdvisories": ["Advisory 1", "Advisory 2"]
   },
   "currentThreatLandscape": {
-    "industryTrends": ["specific trend 1", "specific trend 2"],
-    "recentCampaigns": ["specific campaign 1", "specific campaign 2"],
-    "officialWarnings": ["specific warning 1", "specific warning 2"]
-  }
+    "industryTrends": ["Trend 1", "Trend 2"],
+    "recentCampaigns": ["Campaign 1", "Campaign 2"],
+    "officialWarnings": ["Warning 1", "Warning 2"]
+  },
+  "analysisType": "advanced"
 }`;
-      maxTokens = 500;
-      maxSearches = 3;
     }
 
-    console.log('[API] Making request - Tokens:', maxTokens, 'Searches:', maxSearches);
+    console.log('[API] Making request - Model:', model, 'Tokens:', maxTokens);
     
     const anthropicPayload = {
-      model: "claude-sonnet-4-20250514",
+      model: model,
       max_tokens: maxTokens,
       temperature: 0.1,
       messages: [{ 
@@ -109,12 +114,8 @@ Find SPECIFIC data, not generic advice. JSON response:
       }]
     };
 
-    if (maxSearches > 0) {
-      anthropicPayload.tools = [{
-        "type": "web_search_20250305",
-        "name": "web_search",
-        "max_uses": maxSearches
-      }];
+    if (tools.length > 0) {
+      anthropicPayload.tools = tools;
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -175,81 +176,50 @@ Find SPECIFIC data, not generic advice. JSON response:
       console.log('[API] JSON parsing failed:', parseError);
       console.log('[API] Full response:', responseText);
       
-      // Better fallbacks that actually analyze the content
-      if (analysisType === 'quick') {
-        // Extract key elements for fallback analysis
+      // Fallback based on analysis type
+      if (analysisType === 'basic') {
+        // Basic analysis fallback
         const hasWhatsApp = incident.toLowerCase().includes('whatsapp');
-        const hasHighPay = /\$\d+/.test(incident);
         const hasJobOffer = incident.toLowerCase().includes('job') || incident.toLowerCase().includes('work');
+        const hasFinancialAmount = /\$\d+/.test(incident);
         
         analysis = {
-          whatWeObserved: hasJobOffer ? "Unsolicited job offer with high compensation claims and WhatsApp contact request" : "Communication requires manual analysis due to parsing error",
+          whatWeObserved: "Communication requires manual analysis due to parsing error",
           redFlagsToConsider: [
-            hasHighPay ? "Unusually high compensation claims that seem disproportionate to work described" : "Manual review recommended",
-            hasWhatsApp ? "Request to communicate via WhatsApp instead of professional channels" : "Verify sender through official channels",
-            hasJobOffer ? "Unsolicited job offer without verification of recipient's interest or qualifications" : "Exercise caution with this communication"
+            hasWhatsApp ? "Communication via WhatsApp instead of official channels" : "Verify sender through official channels",
+            hasJobOffer ? "Unsolicited job offer with limited verification" : "Unexpected communication pattern",
+            hasFinancialAmount ? "Financial amounts mentioned without context" : "Exercise standard caution"
           ],
           verificationSteps: [
-            "Research the claimed organization through official channels",
-            "Verify recruiter identity through LinkedIn and company directory", 
-            "Check if job postings exist on official company website"
+            "Contact organization through official website",
+            "Verify sender through official channels",
+            "Research organization independently"
           ],
-          whyVerificationMatters: "Employment scams are increasingly sophisticated and use legitimate company names to build trust with potential victims.",
-          organizationSpecificGuidance: hasJobOffer ? "Legitimate companies typically recruit through official channels and provide detailed job descriptions with realistic compensation." : "Follow standard security verification procedures."
+          whyVerificationMatters: "Independent verification helps confirm legitimacy and protects against social engineering attacks.",
+          organizationSpecificGuidance: "Check official company website for contact verification procedures.",
+          analysisType: "basic",
+          upgradeAvailable: true
         };
-      } else if (analysisType === 'business') {
-        // Extract organization name for fallback
-        const orgMatch = incident.match(/from\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i);
-        const orgName = orgMatch ? orgMatch[1] : "organization mentioned";
-        
+      } else {
+        // Advanced analysis fallback
         analysis = {
           businessVerification: {
-            claimedOrganization: orgName,
-            officialContacts: [
-              "Manual verification required - search for official website",
-              "Look up company in business directories"
-            ],
-            comparisonFindings: [
-              "Automated verification unavailable - compare manually",
-              "Cross-reference contact methods with official sources"
-            ],
-            officialAlerts: [
-              "Check official company website for fraud warnings",
-              "Search for recent security advisories about this organization"
-            ]
-          }
-        };
-      } else if (analysisType === 'threats') {
-        // Keep the good fallback data that's working
-        analysis = {
+            claimedOrganization: "Manual verification required due to system error",
+            officialContacts: ["Search official website for contact information"],
+            comparisonFindings: ["Manual comparison needed"],
+            officialAlerts: ["Check official sources for fraud warnings"]
+          },
           threatIntelligence: {
-            knownScamReports: [
-              "WhatsApp job scams reported increased 400% in 2024 according to FTC data",
-              "Employment fraud via messaging apps now accounts for $68M in losses annually"
-            ],
-            similarIncidents: [
-              "Fake recruiter scams using legitimate company names widespread",
-              "High-paying remote job offers via WhatsApp flagged as common fraud pattern"
-            ],
-            securityAdvisories: [
-              "FTC Consumer Alert: Job scammers increasingly use WhatsApp for initial contact",
-              "Better Business Bureau warns of employment scams promising unrealistic daily earnings"
-            ]
+            knownScamReports: ["Manual research recommended"],
+            similarIncidents: ["Check fraud databases manually"],
+            securityAdvisories: ["Review official security advisories"]
           },
           currentThreatLandscape: {
-            industryTrends: [
-              "Employment scams via messaging apps up 300% from 2023 to 2024",
-              "Remote job scams target workers seeking flexible employment arrangements"
-            ],
-            recentCampaigns: [
-              "Widespread fake recruitment campaigns impersonating legitimate businesses",
-              "Coordinated WhatsApp job scam operations targeting multiple countries"
-            ],
-            officialWarnings: [
-              "FBI IC3 Alert: Employment scams via unofficial communication channels increasing",
-              "Consumer protection agencies warn against job offers requiring WhatsApp contact"
-            ]
-          }
+            industryTrends: ["Consult current security reports"],
+            recentCampaigns: ["Check recent threat intelligence"],
+            officialWarnings: ["Review government security alerts"]
+          },
+          analysisType: "advanced"
         };
       }
     }
@@ -263,7 +233,7 @@ Find SPECIFIC data, not generic advice. JSON response:
     return res.status(500).json({
       error: true,
       message: error.message,
-      analysisType: req.body.analysisType || 'quick'
+      analysisType: req.body.analysisType || 'basic'
     });
   }
 }
