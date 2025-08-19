@@ -35,17 +35,23 @@ export default async function handler(req, res) {
       model = "claude-3-5-haiku-20241022";
       maxTokens = 500; // Increased from 200 to handle longer highlighting responses
       
-      fullPrompt = `Analyze this text for security threats and identify spans to highlight with their threat levels.
+      fullPrompt = `Analyze this text for security threats and identify only the MOST IMPORTANT spans to highlight.
 
 Text: "${incident}"
 
-Identify and categorize text spans by threat level:
-- high_risk: URLs, phone numbers, financial amounts, crypto, wire transfers
-- medium_risk: urgency words, verification requests, personal info requests  
-- suspicious: messaging apps (WhatsApp/Telegram), job offers, prizes, authority impersonation
-- organization: legitimate company/brand names
+Rules:
+- Only highlight 3-5 CRITICAL items maximum
+- Focus on the most dangerous elements only
+- Prioritize: financial amounts, phone numbers, messaging apps, suspicious contact methods
+- DO NOT highlight common words or entire sentences
+- Keep highlights SHORT and SPECIFIC
 
-IMPORTANT: Return a valid JSON with maximum 8 highlights to stay within token limits.
+Categorize by threat level:
+- high_risk: Phone numbers, financial amounts ($250, $2250), crypto/wire transfers
+- suspicious: WhatsApp, Telegram, messaging app names only
+- organization: Company names only (like "Bind Media")
+
+IMPORTANT: Return maximum 5 highlights total. Focus on quality over quantity.
 
 Return ONLY this JSON format:
 {

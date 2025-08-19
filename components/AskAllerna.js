@@ -97,16 +97,16 @@ const AskAllerna = () => {
       let className = '';
       switch (type) {
         case 'high_risk':
-          className = 'bg-red-200 text-red-800 px-1 rounded font-medium border border-red-300';
+          className = 'bg-red-100 text-red-900 px-1 py-0.5 rounded font-medium border-b-2 border-red-400';
           break;
         case 'medium_risk':
-          className = 'bg-orange-200 text-orange-800 px-1 rounded font-medium border border-orange-300';
+          className = 'bg-orange-100 text-orange-900 px-1 py-0.5 rounded font-medium border-b-2 border-orange-400';
           break;
         case 'suspicious':
-          className = 'bg-yellow-200 text-yellow-800 px-1 rounded font-medium border border-yellow-300';
+          className = 'bg-yellow-100 text-yellow-900 px-1 py-0.5 rounded font-medium border-b-2 border-yellow-400';
           break;
         case 'organization':
-          className = 'bg-blue-200 text-blue-800 px-1 rounded font-medium border border-blue-300';
+          className = 'bg-blue-100 text-blue-900 px-1 py-0.5 rounded font-medium border-b-2 border-blue-400';
           break;
         default:
           className = 'bg-gray-200 text-gray-800 px-1 rounded font-medium border border-gray-300';
@@ -501,19 +501,19 @@ ANALYSIS DETAILS:
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-red-200 border border-red-300 rounded"></span>
+                      <span className="w-3 h-3 bg-red-100 border-b-2 border-red-400 rounded"></span>
                       <span>High Risk</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-orange-200 border border-orange-300 rounded"></span>
+                      <span className="w-3 h-3 bg-orange-100 border-b-2 border-orange-400 rounded"></span>
                       <span>Medium Risk</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></span>
+                      <span className="w-3 h-3 bg-yellow-100 border-b-2 border-yellow-400 rounded"></span>
                       <span>Suspicious</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-blue-200 border border-blue-300 rounded"></span>
+                      <span className="w-3 h-3 bg-blue-100 border-b-2 border-blue-400 rounded"></span>
                       <span>Organization</span>
                     </div>
                   </div>
