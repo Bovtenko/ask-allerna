@@ -54,6 +54,7 @@ const AskAllerna = () => {
         // Small delay to show completion
         setTimeout(() => {
           const highlighted = applyAIHighlighting(text, data.highlights || []);
+          console.log('[UI] Applied highlights:', highlighted.substring(0, 200));
           setHighlightedText(highlighted);
           setIsHighlighting(false);
           setScanProgress(0);
@@ -87,6 +88,12 @@ const AskAllerna = () => {
     sortedHighlights.forEach(highlight => {
       const { start, end, type, text: highlightText } = highlight;
       
+      // Validate highlight bounds
+      if (start < 0 || end > highlightedText.length || start >= end) {
+        console.warn('Invalid highlight bounds:', highlight);
+        return;
+      }
+      
       let className = '';
       switch (type) {
         case 'high_risk':
@@ -106,8 +113,9 @@ const AskAllerna = () => {
       }
       
       const before = highlightedText.substring(0, start);
+      const highlightContent = highlightedText.substring(start, end);
       const after = highlightedText.substring(end);
-      const highlighted = `<span class="${className}">${highlightText}</span>`;
+      const highlighted = `<span class="${className}">${highlightContent}</span>`;
       
       highlightedText = before + highlighted + after;
     });
@@ -370,6 +378,7 @@ ANALYSIS DETAILS:
           font-size: inherit;
           z-index: 1;
           overflow: auto;
+          max-height: 100%;
         }
         .input-overlay-container { position: relative; }
         .input-base {
