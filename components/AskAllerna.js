@@ -9,7 +9,7 @@ const AskAllerna = () => {
   const [reportText, setReportText] = useState('');
   const [error, setError] = useState(null);
   
-  // NEW: Streaming analysis states
+  // Streaming analysis states
   const [analysisStage, setAnalysisStage] = useState('');
   const [streamingData, setStreamingData] = useState({
     quick: null,
@@ -18,7 +18,7 @@ const AskAllerna = () => {
   });
   const [completedStages, setCompletedStages] = useState([]);
 
-  // NEW: Progressive section reveal effect (now based on data arrival)
+  // Progressive section reveal effect (now based on data arrival)
   useEffect(() => {
     const newCompleted = [];
     if (streamingData.quick) newCompleted.push('quick');
@@ -27,7 +27,7 @@ const AskAllerna = () => {
     setCompletedStages(newCompleted);
   }, [streamingData]);
 
-  // NEW: Streaming analysis function
+  // Streaming analysis function
   const runStreamingAnalysis = async (incident) => {
     try {
       // Stage 1: Quick Analysis (5-8 seconds)
@@ -72,7 +72,7 @@ const AskAllerna = () => {
         console.log('[UI] Threat intelligence completed');
       }
 
-      // Combine all data for final analysis object
+      // Combine all data for final analysis object (for backwards compatibility)
       const combinedAnalysis = {
         whatWeObserved: streamingData.quick?.whatWeObserved || "Analysis completed",
         redFlagsToConsider: streamingData.quick?.redFlagsToConsider || [],
@@ -124,6 +124,7 @@ const AskAllerna = () => {
     setCompletedStages([]);
   };
 
+  // FIXED: Generate report using streaming data
   const generateReport = () => {
     const timestamp = new Date().toLocaleString('en-US', {
       weekday: 'long',
@@ -138,65 +139,77 @@ const AskAllerna = () => {
 
     const reportId = `ALR-${Date.now().toString().slice(-8)}`;
 
+    // Use streaming data instead of analysis object
+    const reportData = {
+      whatWeObserved: streamingData.quick?.whatWeObserved || "Analysis completed",
+      redFlagsToConsider: streamingData.quick?.redFlagsToConsider || [],
+      verificationSteps: streamingData.quick?.verificationSteps || [],
+      whyVerificationMatters: streamingData.quick?.whyVerificationMatters || "Verification is important for security",
+      organizationSpecificGuidance: streamingData.quick?.organizationSpecificGuidance || "Follow standard security protocols",
+      businessVerification: streamingData.business?.businessVerification || null,
+      threatIntelligence: streamingData.threats?.threatIntelligence || null,
+      currentThreatLandscape: streamingData.threats?.currentThreatLandscape || null
+    };
+
     const report = `=== ASK ALLERNA SECURITY EDUCATION REPORT ===
 
 INCIDENT SUMMARY:
 ${input.length > 200 ? input.substring(0, 200) + '...' : input}
 
 WHAT WE OBSERVED:
-${analysis.whatWeObserved}
+${reportData.whatWeObserved}
 
 RED FLAGS TO CONSIDER:
-${analysis.redFlagsToConsider.map(flag => `• ${flag}`).join('\n')}
+${reportData.redFlagsToConsider.map(flag => `• ${flag}`).join('\n')}
 
 VERIFICATION STEPS:
-${analysis.verificationSteps.map(step => `• ${step}`).join('\n')}
+${reportData.verificationSteps.map(step => `• ${step}`).join('\n')}
 
-${analysis.businessVerification ? `
+${reportData.businessVerification ? `
 BUSINESS VERIFICATION:
-Organization Claimed: ${analysis.businessVerification.claimedOrganization}
-${analysis.businessVerification.officialContacts ? `
+Organization Claimed: ${reportData.businessVerification.claimedOrganization}
+${reportData.businessVerification.officialContacts ? `
 Official Contacts:
-${analysis.businessVerification.officialContacts.map(contact => `• ${contact}`).join('\n')}` : ''}
-${analysis.businessVerification.comparisonFindings ? `
+${reportData.businessVerification.officialContacts.map(contact => `• ${contact}`).join('\n')}` : ''}
+${reportData.businessVerification.comparisonFindings ? `
 Comparison Findings:
-${analysis.businessVerification.comparisonFindings.map(finding => `• ${finding}`).join('\n')}` : ''}
-${analysis.businessVerification.officialAlerts ? `
+${reportData.businessVerification.comparisonFindings.map(finding => `• ${finding}`).join('\n')}` : ''}
+${reportData.businessVerification.officialAlerts ? `
 Official Alerts:
-${analysis.businessVerification.officialAlerts.map(alert => `• ${alert}`).join('\n')}` : ''}
+${reportData.businessVerification.officialAlerts.map(alert => `• ${alert}`).join('\n')}` : ''}
 ` : ''}
 
-${analysis.threatIntelligence ? `
+${reportData.threatIntelligence ? `
 THREAT INTELLIGENCE:
-${analysis.threatIntelligence.knownScamReports ? `
+${reportData.threatIntelligence.knownScamReports ? `
 Known Scam Reports:
-${analysis.threatIntelligence.knownScamReports.map(report => `• ${report}`).join('\n')}` : ''}
-${analysis.threatIntelligence.similarIncidents ? `
+${reportData.threatIntelligence.knownScamReports.map(report => `• ${report}`).join('\n')}` : ''}
+${reportData.threatIntelligence.similarIncidents ? `
 Similar Incidents:
-${analysis.threatIntelligence.similarIncidents.map(incident => `• ${incident}`).join('\n')}` : ''}
-${analysis.threatIntelligence.securityAdvisories ? `
+${reportData.threatIntelligence.similarIncidents.map(incident => `• ${incident}`).join('\n')}` : ''}
+${reportData.threatIntelligence.securityAdvisories ? `
 Security Advisories:
-${analysis.threatIntelligence.securityAdvisories.map(advisory => `• ${advisory}`).join('\n')}` : ''}
+${reportData.threatIntelligence.securityAdvisories.map(advisory => `• ${advisory}`).join('\n')}` : ''}
 ` : ''}
 
-${analysis.currentThreatLandscape ? `
+${reportData.currentThreatLandscape ? `
 CURRENT THREAT LANDSCAPE:
-${analysis.currentThreatLandscape.industryTrends ? `
+${reportData.currentThreatLandscape.industryTrends ? `
 Industry Trends:
-${analysis.currentThreatLandscape.industryTrends.map(trend => `• ${trend}`).join('\n')}` : ''}
-${analysis.currentThreatLandscape.recentCampaigns ? `
+${reportData.currentThreatLandscape.industryTrends.map(trend => `• ${trend}`).join('\n')}` : ''}
+${reportData.currentThreatLandscape.recentCampaigns ? `
 Recent Campaigns:
-${analysis.currentThreatLandscape.recentCampaigns.map(campaign => `• ${campaign}`).join('\n')}` : ''}
-${analysis.currentThreatLandscape.officialWarnings ? `
+${reportData.currentThreatLandscape.recentCampaigns.map(campaign => `• ${campaign}`).join('\n')}` : ''}
+${reportData.currentThreatLandscape.officialWarnings ? `
 Official Warnings:
-${analysis.currentThreatLandscape.officialWarnings.map(warning => `• ${warning}`).join('\n')}` : ''}
+${reportData.currentThreatLandscape.officialWarnings.map(warning => `• ${warning}`).join('\n')}` : ''}
 ` : ''}
 
 WHY VERIFICATION MATTERS:
-${analysis.whyVerificationMatters}
+${reportData.whyVerificationMatters}
 
 ORGANIZATION-SPECIFIC GUIDANCE:
-${analysis.organizationSpecificGuidance}
+${reportData.organizationSpecificGuidance}
 
 REPORT DETAILS:
 - Generated: ${timestamp}
@@ -333,13 +346,13 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
         </div>
       </div>
 
-      {/* NEW: Streaming Dashboard - Shows sections as data arrives */}
+      {/* Streaming Dashboard - Shows sections as data arrives */}
       {(completedStages.length > 0 || isAnalyzing) && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Security Education Analysis</h2>
             <div className="flex gap-2">
-              {completedStages.length >= 3 && (
+              {completedStages.length >= 1 && (
                 <button
                   onClick={generateReport}
                   className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2"
