@@ -15,13 +15,26 @@ const AskAllerna = () => {
   const [isAnalysisMode, setIsAnalysisMode] = useState(false);
   const [highlightedText, setHighlightedText] = useState('');
   const [isHighlighting, setIsHighlighting] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
 
-  // AI-powered text highlighting function
+  // AI-powered text highlighting function with scanning animation
   const getAIHighlighting = async (text) => {
-    if (!text || text.length < 10) return '';
+    if (!text || text.length < 10) return text;
     
     try {
       setIsHighlighting(true);
+      setScanProgress(0);
+      
+      // Animate scanning progress
+      const scanInterval = setInterval(() => {
+        setScanProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(scanInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
       
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -32,18 +45,35 @@ const AskAllerna = () => {
         })
       });
       
+      // Complete the scan animation
+      clearInterval(scanInterval);
+      setScanProgress(100);
+      
       if (response.ok) {
         const data = await response.json();
-        return applyAIHighlighting(text, data.highlights || []);
+        // Small delay to show completion
+        setTimeout(() => {
+          const highlighted = applyAIHighlighting(text, data.highlights || []);
+          setHighlightedText(highlighted);
+          setIsHighlighting(false);
+          setScanProgress(0);
+        }, 300);
+        return highlighted;
       } else {
         console.warn('AI highlighting failed, using fallback');
-        return highlightSuspiciousText(text);
+        setIsHighlighting(false);
+        setScanProgress(0);
+        const fallback = highlightSuspiciousText(text);
+        setHighlightedText(fallback);
+        return fallback;
       }
     } catch (error) {
       console.warn('AI highlighting error:', error);
-      return highlightSuspiciousText(text);
-    } finally {
       setIsHighlighting(false);
+      setScanProgress(0);
+      const fallback = highlightSuspiciousText(text);
+      setHighlightedText(fallback);
+      return fallback;
     }
   };
 
@@ -147,12 +177,14 @@ const AskAllerna = () => {
     return highlightedText;
   };
 
-  // Update highlighted text with AI analysis
+  // Update highlighted text with AI analysis - keep original text visible
   useEffect(() => {
     if (isAnalysisMode && input && input.length > 10) {
+      // Show original text immediately, then enhance with AI
+      setHighlightedText(input);
+      
       const debounceTimer = setTimeout(async () => {
-        const aiHighlighted = await getAIHighlighting(input);
-        setHighlightedText(aiHighlighted);
+        await getAIHighlighting(input);
       }, 1000); // 1 second debounce
       
       return () => clearTimeout(debounceTimer);
@@ -348,6 +380,26 @@ ANALYSIS DETAILS:
           caret-color: #374151;
         }
         .input-visible { color: #374151; z-index: 3; }
+        .scan-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.3) 50%, transparent 100%);
+          width: 100px;
+          z-index: 4;
+          transition: transform 0.3s ease;
+          pointer-events: none;
+        }
+        .scan-progress {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+          transition: width 0.3s ease;
+          z-index: 5;
+        }
         `
       }} />
       
