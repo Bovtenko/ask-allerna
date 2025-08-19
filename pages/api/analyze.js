@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
-    console.log('[API] Building prompt for analysis type:', analysisType);
+    console.log('[API] Building ultra-optimized prompt for analysis type:', analysisType);
     
     const currentDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -32,82 +32,79 @@ export default async function handler(req, res) {
       day: 'numeric' 
     });
     
-    // OPTIMIZED: Reduced token limits and search counts
+    // ULTRA-OPTIMIZED: Minimal token limits and targeted searches
     let fullPrompt;
     let maxTokens;
     let maxSearches;
     
     if (analysisType === 'quick') {
-      // Quick analysis - no web search, basic patterns only
+      // Quick analysis - minimal tokens, no searches
       fullPrompt = [
-        PROMPTS.analysis.base,
-        `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
-        PROMPTS.analysis.balanced,
-        `QUICK ANALYSIS MODE: Focus on immediate red flags and basic verification steps. Do NOT use web search tools. Base analysis on patterns and formatting only.`,
-        `\nINCIDENT TO ANALYZE: ${incident}`,
-        `Respond with this exact JSON format:`,
+        `You are a cybersecurity expert. Today is ${currentDate}.`,
+        `Analyze this communication for security red flags. Focus on obvious suspicious patterns.`,
+        `\nCommunication: ${incident}`,
+        `Respond with ONLY this exact JSON format:`,
         `{
-  "whatWeObserved": "Neutral, factual description of communication elements",
-  "redFlagsToConsider": ["MANDATORY: 2-4 immediate pattern-based red flags", "Focus on obvious formatting/language issues"],
-  "verificationSteps": ["Basic verification steps", "Official contact methods"],
-  "whyVerificationMatters": "Brief explanation of verification importance",
-  "organizationSpecificGuidance": "General guidance based on claimed organization"
+  "whatWeObserved": "Brief factual description of the communication",
+  "redFlagsToConsider": ["Main red flag 1", "Main red flag 2", "Main red flag 3"],
+  "verificationSteps": ["Verification step 1", "Verification step 2", "Verification step 3"],
+  "whyVerificationMatters": "Brief explanation of why verification is important",
+  "organizationSpecificGuidance": "Brief guidance based on organization mentioned"
 }`,
-        `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
+        `IMPORTANT: Output ONLY valid JSON. No other text.`
       ].join('\n\n');
-      maxTokens = 600; // REDUCED from 800
+      maxTokens = 400; // Ultra-low for speed
       maxSearches = 0;
       
     } else if (analysisType === 'business') {
-      // OPTIMIZED: Business verification - focused searches only
+      // Business verification - focused searches only
       fullPrompt = [
-        PROMPTS.analysis.base,
-        `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
-        `BUSINESS VERIFICATION MODE: Use web search to verify the claimed organization's official contact methods. FOCUS on finding official website and contact info only.`,
-        `SEARCH STRATEGY: 1) Official company website 2) Official contact page 3) Scam warnings about this company`,
-        `\nINCIDENT TO ANALYZE: ${incident}`,
-        `Focus specifically on business verification. Respond with this exact JSON format:`,
+        `You are a cybersecurity expert. Today is ${currentDate}.`,
+        `Use web search to verify the organization mentioned in this communication.`,
+        `Search strategy: 1) Find official website 2) Find official contact info 3) Look for scam warnings`,
+        `\nCommunication: ${incident}`,
+        `Respond with ONLY this exact JSON format:`,
         `{
   "businessVerification": {
-    "claimedOrganization": "Name of organization claimed",
-    "officialContacts": ["Official contact methods found through web search"],
+    "claimedOrganization": "Name of organization claimed in communication",
+    "officialContacts": ["Official contact method 1", "Official contact method 2"],
     "comparisonFindings": ["How claimed contacts compare to official ones"],
     "officialAlerts": ["Any scam warnings found about this organization"]
   }
 }`,
-        `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
+        `IMPORTANT: Output ONLY valid JSON. No other text.`
       ].join('\n\n');
-      maxTokens = 700; // REDUCED from 1000
-      maxSearches = 3; // REDUCED from 5
+      maxTokens = 500; // Reduced for cost efficiency
+      maxSearches = 2; // Minimal but effective
       
     } else if (analysisType === 'threats') {
-      // OPTIMIZED: Threat intelligence - targeted searches only
+      // Threat intelligence - targeted threat research
       fullPrompt = [
-        PROMPTS.analysis.base,
-        `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
-        `THREAT INTELLIGENCE MODE: Use web search to find scam reports and current threat trends. FOCUS on recent reports only.`,
-        `SEARCH STRATEGY: 1) Recent scam reports 2) FTC/government warnings 3) Current threat trends`,
-        `\nINCIDENT TO ANALYZE: ${incident}`,
-        `Focus specifically on threat intelligence. Respond with this exact JSON format:`,
+        `You are a cybersecurity expert. Today is ${currentDate}.`,
+        `Use web search to find current threat intelligence about this type of communication.`,
+        `Search strategy: 1) Recent scam reports 2) Official security warnings`,
+        `\nCommunication: ${incident}`,
+        `Respond with ONLY this exact JSON format:`,
         `{
   "threatIntelligence": {
-    "knownScamReports": ["Recent scam reports found through web search"],
-    "similarIncidents": ["Similar attack patterns found"],
-    "securityAdvisories": ["Official warnings found through research"]
+    "knownScamReports": ["Recent scam report 1", "Recent scam report 2"],
+    "similarIncidents": ["Similar incident pattern 1", "Similar incident pattern 2"],
+    "securityAdvisories": ["Official warning 1", "Official warning 2"]
   },
   "currentThreatLandscape": {
-    "industryTrends": ["Current scam trends found through web search"],
-    "recentCampaigns": ["Recent phishing campaigns found"],
-    "officialWarnings": ["Recent security alerts found"]
+    "industryTrends": ["Current threat trend 1", "Current threat trend 2"],
+    "recentCampaigns": ["Recent campaign 1", "Recent campaign 2"],
+    "officialWarnings": ["Official alert 1", "Official alert 2"]
   }
 }`,
-        `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
+        `IMPORTANT: Output ONLY valid JSON. No other text.`
       ].join('\n\n');
-      maxTokens = 700; // REDUCED from 1200
-      maxSearches = 3; // REDUCED from 8
+      maxTokens = 500; // Optimized for cost
+      maxSearches = 2; // Targeted searches only
     }
 
-    console.log('[API] Making request to Anthropic API...');
+    console.log('[API] Making ultra-optimized request to Anthropic API...');
+    console.log('[API] Config - Tokens:', maxTokens, 'Searches:', maxSearches);
     
     const anthropicPayload = {
       model: "claude-sonnet-4-20250514",
@@ -119,7 +116,7 @@ export default async function handler(req, res) {
       }]
     };
 
-    // Add web search tool only for business and threats analysis
+    // Add web search tool only when needed
     if (maxSearches > 0) {
       anthropicPayload.tools = [{
         "type": "web_search_20250305",
@@ -172,61 +169,110 @@ export default async function handler(req, res) {
     }
     
     console.log('[API] Response text length:', responseText.length);
+    console.log('[API] Raw response preview:', responseText.substring(0, 200));
     
     let analysis;
 
     try {
-      analysis = JSON.parse(responseText);
+      // Clean the response text before parsing
+      let cleanedResponse = responseText.trim();
+      
+      // Remove any markdown code blocks if present
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.replace(/```json\n?/, '').replace(/\n?```$/, '');
+      } else if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/```\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      analysis = JSON.parse(cleanedResponse);
       console.log('[API] JSON parsed successfully for', analysisType);
       
     } catch (parseError) {
       console.log('[API] JSON parsing failed:', parseError);
+      console.log('[API] Full raw response:', responseText);
       
-      // Fallback based on analysis type
+      // Comprehensive fallback responses
       if (analysisType === 'quick') {
         analysis = {
-          whatWeObserved: "Analysis completed but formatting error occurred",
-          redFlagsToConsider: ["System formatting error - manual review recommended"],
-          verificationSteps: ["Contact your IT security team for manual analysis"],
-          whyVerificationMatters: "When automated analysis encounters errors, human verification becomes critical.",
-          organizationSpecificGuidance: "Analysis failed due to formatting error."
+          whatWeObserved: "Communication analyzed - system encountered parsing issue but security patterns reviewed",
+          redFlagsToConsider: [
+            "System parsing error occurred - manual review strongly recommended",
+            "Exercise heightened caution with this communication until verified",
+            "Automated red flag detection temporarily limited"
+          ],
+          verificationSteps: [
+            "Contact your IT security team immediately for manual analysis",
+            "Verify sender through official channels before any interaction", 
+            "Do not click links or provide information until verification complete"
+          ],
+          whyVerificationMatters: "When automated security tools encounter errors, manual verification becomes critical for protection against social engineering attacks.",
+          organizationSpecificGuidance: "Follow your organization's incident response procedures for suspicious communications during system limitations."
         };
       } else if (analysisType === 'business') {
         analysis = {
           businessVerification: {
-            claimedOrganization: "Could not determine",
-            officialContacts: ["Business verification temporarily unavailable"],
-            comparisonFindings: ["Manual verification recommended"],
-            officialAlerts: ["Check official website directly"]
+            claimedOrganization: "Organization analysis incomplete due to system error",
+            officialContacts: [
+              "Manual verification required - visit official website directly",
+              "Contact organization through verified phone numbers only"
+            ],
+            comparisonFindings: [
+              "Automated comparison unavailable - manual verification essential",
+              "Cross-reference all contact details with official sources"
+            ],
+            officialAlerts: [
+              "Check official company website for any fraud warnings",
+              "Review security advisories from relevant authorities"
+            ]
           }
         };
       } else if (analysisType === 'threats') {
         analysis = {
           threatIntelligence: {
-            knownScamReports: ["Threat database temporarily unavailable"],
-            similarIncidents: ["Manual threat research recommended"],
-            securityAdvisories: ["Check official security advisories directly"]
+            knownScamReports: [
+              "Automated threat database lookup temporarily unavailable",
+              "Check FTC fraud reports and IC3 complaints manually"
+            ],
+            similarIncidents: [
+              "Manual research recommended through security vendor sites",
+              "Review recent fraud patterns reported by authorities"
+            ],
+            securityAdvisories: [
+              "Check official government cybersecurity advisories",
+              "Review latest warnings from CISA and FBI"
+            ]
           },
           currentThreatLandscape: {
-            industryTrends: ["Current threat data temporarily unavailable"],
-            recentCampaigns: ["Manual research recommended"],
-            officialWarnings: ["Check security vendor websites directly"]
+            industryTrends: [
+              "Current threat analysis temporarily limited",
+              "Consult security vendor threat intelligence reports"
+            ],
+            recentCampaigns: [
+              "Manual research recommended for latest campaigns",
+              "Check recent security blog posts from major vendors"
+            ],
+            officialWarnings: [
+              "Review official alerts from cybersecurity authorities",
+              "Check latest advisories from relevant government agencies"
+            ]
           }
         };
       }
     }
 
-    console.log('[API] Returning successful analysis for', analysisType);
+    console.log('[API] Successfully returning analysis for', analysisType);
+    console.log('[API] Final cost estimate - Tokens:', maxTokens, 'Searches:', maxSearches);
     return res.status(200).json(analysis);
 
   } catch (error) {
     console.error('[API] Complete analysis error:', error);
+    console.error('[API] Error stack:', error.stack);
     
-    // Return type-specific fallback
     const fallbackAnalysis = {
       error: true,
       message: error.message,
-      analysisType: req.body.analysisType || 'quick'
+      analysisType: req.body.analysisType || 'quick',
+      fallbackGuidance: "Manual security review recommended due to system error"
     };
     
     return res.status(500).json(fallbackAnalysis);
