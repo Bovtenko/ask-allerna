@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     console.log('[API] Making request to Anthropic API with Claude 3.5 Sonnet...');
     
     const anthropicPayload = {
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 2500,
       temperature: 0.1,
       messages: [{ 
@@ -161,6 +161,17 @@ export default async function handler(req, res) {
     };
 
     console.log('[API] Returning fallback analysis due to error');
-    return res.status(500).json(fallbackAnalysis);
+    
+    // Also include the original error in the response for debugging
+    const debugResponse = {
+      ...fallbackAnalysis,
+      debugInfo: {
+        errorMessage: error.message,
+        errorType: errorType,
+        stack: error.stack?.substring(0, 500) // First 500 chars of stack trace
+      }
+    };
+    
+    return res.status(500).json(debugResponse);
   }
 }
