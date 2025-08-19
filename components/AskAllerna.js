@@ -29,6 +29,10 @@ const AskAllerna = () => {
 
   // Streaming analysis function
   const runStreamingAnalysis = async (incident) => {
+    let quickData = null;
+    let businessData = null;
+    let threatsData = null;
+
     try {
       // Stage 1: Quick Analysis (5-8 seconds)
       setAnalysisStage('Performing initial security assessment...');
@@ -39,7 +43,7 @@ const AskAllerna = () => {
       });
       
       if (quickResponse.ok) {
-        const quickData = await quickResponse.json();
+        quickData = await quickResponse.json();
         setStreamingData(prev => ({ ...prev, quick: quickData }));
         console.log('[UI] Quick analysis completed');
       }
@@ -53,7 +57,7 @@ const AskAllerna = () => {
       });
       
       if (businessResponse.ok) {
-        const businessData = await businessResponse.json();
+        businessData = await businessResponse.json();
         setStreamingData(prev => ({ ...prev, business: businessData }));
         console.log('[UI] Business verification completed');
       }
@@ -67,18 +71,18 @@ const AskAllerna = () => {
       });
       
       if (threatsResponse.ok) {
-        const threatsData = await threatsResponse.json();
+        threatsData = await threatsResponse.json();
         setStreamingData(prev => ({ ...prev, threats: threatsData }));
         console.log('[UI] Threat intelligence completed');
       }
 
       // Combine all data for final analysis object (for backwards compatibility)
       const combinedAnalysis = {
-        whatWeObserved: streamingData.quick?.whatWeObserved || "Analysis completed",
-        redFlagsToConsider: streamingData.quick?.redFlagsToConsider || [],
-        verificationSteps: streamingData.quick?.verificationSteps || [],
-        whyVerificationMatters: streamingData.quick?.whyVerificationMatters || "Verification is important for security",
-        organizationSpecificGuidance: streamingData.quick?.organizationSpecificGuidance || "Follow standard security protocols",
+        whatWeObserved: quickData?.whatWeObserved || "Analysis completed",
+        redFlagsToConsider: quickData?.redFlagsToConsider || [],
+        verificationSteps: quickData?.verificationSteps || [],
+        whyVerificationMatters: quickData?.whyVerificationMatters || "Verification is important for security",
+        organizationSpecificGuidance: quickData?.organizationSpecificGuidance || "Follow standard security protocols",
         businessVerification: businessData?.businessVerification || null,
         threatIntelligence: threatsData?.threatIntelligence || null,
         currentThreatLandscape: threatsData?.currentThreatLandscape || null
@@ -679,4 +683,4 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
   );
 };
 
-export default AskAllerna;
+export default AskAllerna;git add .
