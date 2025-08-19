@@ -10,7 +10,7 @@ IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', {
       day: 'numeric' 
     })}. Use this for any date-related analysis.`,
     
-    withThreatIntel: `Use web search to gather current threat intelligence. Search for recent reports about domains, phone numbers, or similar attack patterns.`,
+    withThreatIntel: `IMPORTANT: Use the web search tool to verify official contact information and search for recent scam reports. Search for the claimed organization's official contacts and any recent fraud reports.`,
     
     balanced: `Important: Many communications that seem unusual are actually legitimate. Focus on educational red flags that users should be aware of, while encouraging independent verification through official channels. Pay attention to formatting inconsistencies that don't match organizational standards.`
   },

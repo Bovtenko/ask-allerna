@@ -58,11 +58,16 @@ export default async function handler(req, res) {
     
     const anthropicPayload = {
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,  // Reduced from 2500
+      max_tokens: 1500,
       temperature: 0.1,
       messages: [{ 
         role: "user", 
         content: fullPrompt 
+      }],
+      tools: [{
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 3  // Start with just 3 searches to be conservative
       }]
     };
 
