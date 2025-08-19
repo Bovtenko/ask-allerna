@@ -683,4 +683,4 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
   );
 };
 
-export default AskAllerna;git add .
+export default AskAllerna;
