@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     if (analysisType === 'highlight') {
       // AI HIGHLIGHTING - Haiku 3.5 for speed and cost efficiency
       model = "claude-3-5-haiku-20241022";
-      maxTokens = 200;
+      maxTokens = 500; // Increased from 200 to handle longer highlighting responses
       
       fullPrompt = `Analyze this text for security threats and identify spans to highlight with their threat levels.
 
@@ -41,15 +41,16 @@ Text: "${incident}"
 
 Identify and categorize text spans by threat level:
 - high_risk: URLs, phone numbers, financial amounts, crypto, wire transfers
-- medium_risk: urgency words, verification requests, personal info requests
+- medium_risk: urgency words, verification requests, personal info requests  
 - suspicious: messaging apps (WhatsApp/Telegram), job offers, prizes, authority impersonation
 - organization: legitimate company/brand names
+
+IMPORTANT: Return a valid JSON with maximum 8 highlights to stay within token limits.
 
 Return ONLY this JSON format:
 {
   "highlights": [
-    {"start": 0, "end": 10, "type": "high_risk", "text": "example text"},
-    {"start": 15, "end": 25, "type": "suspicious", "text": "WhatsApp"}
+    {"start": 0, "end": 10, "type": "high_risk", "text": "example text"}
   ]
 }`;
 
@@ -190,6 +191,19 @@ Respond with ONLY this JSON (no other text):
         cleanedResponse = cleanedResponse.replace(/```json\n?/, '').replace(/\n?```$/, '');
       } else if (cleanedResponse.startsWith('```')) {
         cleanedResponse = cleanedResponse.replace(/```\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      // Try to fix truncated JSON for highlighting responses
+      if (analysisType === 'highlight' && !cleanedResponse.trim().endsWith('}')) {
+        console.log('[API] Detected truncated JSON, attempting to fix...');
+        // Find the last complete highlight entry
+        const lastCompleteEntry = cleanedResponse.lastIndexOf('"},');
+        if (lastCompleteEntry > -1) {
+          cleanedResponse = cleanedResponse.substring(0, lastCompleteEntry + 2) + '\n  ]\n}';
+        } else {
+          // Fallback: close the JSON properly
+          cleanedResponse = cleanedResponse + '\n  ]\n}';
+        }
       }
       
       analysis = JSON.parse(cleanedResponse);
