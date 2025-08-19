@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { incident, analysisType = 'quick' } = req.body; // NEW: Support analysis types
+    const { incident, analysisType = 'quick' } = req.body;
     console.log('[API] Incident length:', incident ? incident.length : 0);
     console.log('[API] Analysis type:', analysisType);
 
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       day: 'numeric' 
     });
     
-    // NEW: Different prompts for different analysis types
+    // OPTIMIZED: Reduced token limits and search counts
     let fullPrompt;
     let maxTokens;
     let maxSearches;
@@ -55,17 +55,16 @@ export default async function handler(req, res) {
 }`,
         `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
       ].join('\n\n');
-      maxTokens = 800;
+      maxTokens = 600; // REDUCED from 800
       maxSearches = 0;
       
     } else if (analysisType === 'business') {
-      // Business verification - focus on company research
+      // OPTIMIZED: Business verification - focused searches only
       fullPrompt = [
         PROMPTS.analysis.base,
         `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
-        `BUSINESS VERIFICATION MODE: Use web search to verify the claimed organization's official contact methods and find any recent scam warnings.`,
-        PROMPTS.research.domains,
-        PROMPTS.research.businessVerification,
+        `BUSINESS VERIFICATION MODE: Use web search to verify the claimed organization's official contact methods. FOCUS on finding official website and contact info only.`,
+        `SEARCH STRATEGY: 1) Official company website 2) Official contact page 3) Scam warnings about this company`,
         `\nINCIDENT TO ANALYZE: ${incident}`,
         `Focus specifically on business verification. Respond with this exact JSON format:`,
         `{
@@ -78,23 +77,21 @@ export default async function handler(req, res) {
 }`,
         `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
       ].join('\n\n');
-      maxTokens = 1000;
-      maxSearches = 5;
+      maxTokens = 700; // REDUCED from 1000
+      maxSearches = 3; // REDUCED from 5
       
     } else if (analysisType === 'threats') {
-      // Threat intelligence - focus on scam databases and current threats
+      // OPTIMIZED: Threat intelligence - targeted searches only
       fullPrompt = [
         PROMPTS.analysis.base,
         `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
-        `THREAT INTELLIGENCE MODE: Use web search to find current scam reports, fraud databases, and recent threat campaigns matching this pattern.`,
-        PROMPTS.research.phoneNumbers,
-        PROMPTS.research.patterns,
-        PROMPTS.research.currentThreats,
+        `THREAT INTELLIGENCE MODE: Use web search to find scam reports and current threat trends. FOCUS on recent reports only.`,
+        `SEARCH STRATEGY: 1) Recent scam reports 2) FTC/government warnings 3) Current threat trends`,
         `\nINCIDENT TO ANALYZE: ${incident}`,
         `Focus specifically on threat intelligence. Respond with this exact JSON format:`,
         `{
   "threatIntelligence": {
-    "knownScamReports": ["Scam reports found through web search"],
+    "knownScamReports": ["Recent scam reports found through web search"],
     "similarIncidents": ["Similar attack patterns found"],
     "securityAdvisories": ["Official warnings found through research"]
   },
@@ -106,8 +103,8 @@ export default async function handler(req, res) {
 }`,
         `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
       ].join('\n\n');
-      maxTokens = 1200;
-      maxSearches = 8;
+      maxTokens = 700; // REDUCED from 1200
+      maxSearches = 3; // REDUCED from 8
     }
 
     console.log('[API] Making request to Anthropic API...');

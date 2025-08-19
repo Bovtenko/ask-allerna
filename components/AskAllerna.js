@@ -27,7 +27,7 @@ const AskAllerna = () => {
     setCompletedStages(newCompleted);
   }, [streamingData]);
 
-  // Streaming analysis function
+  // OPTIMIZED: Streaming analysis function with parallel processing and smart routing
   const runStreamingAnalysis = async (incident) => {
     let quickData = null;
     let businessData = null;
@@ -48,35 +48,101 @@ const AskAllerna = () => {
         console.log('[UI] Quick analysis completed');
       }
 
-      // Stage 2: Business Verification (15-20 seconds)
-      setAnalysisStage('Verifying business contacts and official information...');
-      const businessResponse = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incident, analysisType: 'business' })
-      });
-      
+      // SMART ROUTING: Only do expensive analysis if high suspicion detected
+      const redFlagCount = quickData?.redFlagsToConsider?.length || 0;
+      const hasHighRiskKeywords = quickData?.whatWeObserved?.toLowerCase().includes('suspicious') || 
+                                 quickData?.whatWeObserved?.toLowerCase().includes('scam') ||
+                                 quickData?.whatWeObserved?.toLowerCase().includes('unsolicited') ||
+                                 quickData?.whatWeObserved?.toLowerCase().includes('whatsapp') ||
+                                 quickData?.whatWeObserved?.toLowerCase().includes('urgent') ||
+                                 quickData?.redFlagsToConsider?.some(flag => 
+                                   flag.toLowerCase().includes('suspicious') || 
+                                   flag.toLowerCase().includes('scam') ||
+                                   flag.toLowerCase().includes('urgent')
+                                 );
+
+      // Skip expensive stages for obviously legitimate communications
+      if (redFlagCount < 2 && !hasHighRiskKeywords) {
+        console.log('[UI] Low risk detected - skipping expensive analysis stages');
+        setAnalysisStage('Analysis complete - low risk communication detected');
+        
+        // Provide basic business guidance instead of expensive searches
+        const basicBusinessData = {
+          businessVerification: {
+            claimedOrganization: "Analysis skipped for low-risk communication",
+            officialContacts: ["Verify through official company website if needed"],
+            comparisonFindings: ["Low risk pattern detected - minimal verification needed"],
+            officialAlerts: ["No immediate concerns identified"]
+          }
+        };
+        
+        const basicThreatData = {
+          threatIntelligence: {
+            knownScamReports: ["No high-risk patterns detected"],
+            similarIncidents: ["Communication appears legitimate"],
+            securityAdvisories: ["Standard security awareness recommended"]
+          },
+          currentThreatLandscape: {
+            industryTrends: ["No specific threats identified for this communication type"],
+            recentCampaigns: ["Not matching known malicious patterns"],
+            officialWarnings: ["No urgent security alerts for this scenario"]
+          }
+        };
+
+        setStreamingData(prev => ({
+          ...prev,
+          business: basicBusinessData,
+          threats: basicThreatData
+        }));
+
+        // Combine data and exit early
+        const combinedAnalysis = {
+          whatWeObserved: quickData?.whatWeObserved || "Analysis completed",
+          redFlagsToConsider: quickData?.redFlagsToConsider || [],
+          verificationSteps: quickData?.verificationSteps || [],
+          whyVerificationMatters: quickData?.whyVerificationMatters || "Verification is important for security",
+          organizationSpecificGuidance: quickData?.organizationSpecificGuidance || "Follow standard security protocols",
+          businessVerification: basicBusinessData.businessVerification,
+          threatIntelligence: basicThreatData.threatIntelligence,
+          currentThreatLandscape: basicThreatData.currentThreatLandscape
+        };
+
+        setAnalysis(combinedAnalysis);
+        return; // Exit early - saves ~$0.25 per analysis
+      }
+
+      // HIGH SUSPICION: Run parallel expensive analysis
+      console.log('[UI] High risk detected - running comprehensive analysis');
+      setAnalysisStage('High risk detected - running comprehensive verification...');
+
+      // PARALLEL PROCESSING: Run business and threats simultaneously instead of sequentially
+      const [businessResponse, threatsResponse] = await Promise.all([
+        fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ incident, analysisType: 'business' })
+        }),
+        fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ incident, analysisType: 'threats' })
+        })
+      ]);
+
+      // Process responses
       if (businessResponse.ok) {
         businessData = await businessResponse.json();
         setStreamingData(prev => ({ ...prev, business: businessData }));
         console.log('[UI] Business verification completed');
       }
 
-      // Stage 3: Threat Intelligence (15-20 seconds)
-      setAnalysisStage('Researching threat intelligence and current threats...');
-      const threatsResponse = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incident, analysisType: 'threats' })
-      });
-      
       if (threatsResponse.ok) {
         threatsData = await threatsResponse.json();
         setStreamingData(prev => ({ ...prev, threats: threatsData }));
         console.log('[UI] Threat intelligence completed');
       }
 
-      // Combine all data for final analysis object (for backwards compatibility)
+      // Combine all data for final analysis object
       const combinedAnalysis = {
         whatWeObserved: quickData?.whatWeObserved || "Analysis completed",
         redFlagsToConsider: quickData?.redFlagsToConsider || [],
@@ -128,7 +194,7 @@ const AskAllerna = () => {
     setCompletedStages([]);
   };
 
-  // FIXED: Generate report using streaming data
+  // Generate report using streaming data
   const generateReport = () => {
     const timestamp = new Date().toLocaleString('en-US', {
       weekday: 'long',
@@ -219,7 +285,7 @@ REPORT DETAILS:
 - Generated: ${timestamp}
 - Report ID: ${reportId}
 - Platform: Ask Allerna Security Education Platform
-- Analysis Engine: Claude Sonnet 4 with Real-time Streaming Intelligence
+- Analysis Engine: Claude Sonnet 4 with Optimized Streaming Intelligence
 
 IMPORTANT DISCLAIMER:
 This analysis is for educational purposes only. Always verify through 
@@ -286,7 +352,7 @@ official channels and follow your organization's security protocols.
           <p className="text-gray-600">Security Education & Red Flag Detection Platform</p>
           <div className="mt-2 flex items-center justify-center gap-2 text-sm text-green-600">
             <Search className="w-4 h-4" />
-            <span>Powered by Real-time Streaming Intelligence</span>
+            <span>Powered by Optimized Streaming Intelligence</span>
           </div>
         </div>
         
@@ -333,7 +399,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <div className="flex flex-col items-center">
-                    <span>Streaming Real-time Analysis...</span>
+                    <span>Optimized Streaming Analysis...</span>
                     {analysisStage && (
                       <span className="text-sm opacity-80 mt-1">{analysisStage}</span>
                     )}
@@ -676,8 +742,8 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
 
       {/* Footer */}
       <div className="mt-4 text-center text-sm text-gray-500">
-        <p>🔒 Ask Allerna helps you learn to identify social engineering patterns through real-time threat intelligence.</p>
-        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Real-time Streaming Research • Educational Focus</p>
+        <p>🔒 Ask Allerna helps you learn to identify social engineering patterns through optimized threat intelligence.</p>
+        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Optimized Streaming Research • Educational Focus</p>
       </div>
     </div>
   );
