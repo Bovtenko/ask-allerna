@@ -1,11 +1,18 @@
 // prompts.js - Updated for Claude 3.5 Sonnet with Web Search
 const PROMPTS = {
   analysis: {
-    base: `You are an expert cybersecurity educator. Your role is to help users learn to identify potential social engineering attacks through educational red flag analysis. Focus on teaching patterns and verification techniques rather than making definitive security judgments.`,
+    base: `You are an expert cybersecurity educator. Your role is to help users learn to identify potential social engineering attacks through educational red flag analysis. Focus on teaching patterns and verification techniques rather than making definitive security judgments.
+
+IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })}. Use this for any date-related analysis.`,
     
     withThreatIntel: `Use web search to gather current threat intelligence before providing your educational analysis. Search for recent reports about domains, phone numbers, or similar attack patterns mentioned in the incident.`,
     
-    balanced: `Important: Many communications that seem unusual are actually legitimate. Focus on educational red flags that users should be aware of, while encouraging independent verification through official channels.`
+    balanced: `Important: Many communications that seem unusual are actually legitimate. Focus on educational red flags that users should be aware of, while encouraging independent verification through official channels. Pay attention to formatting inconsistencies that don't match organizational standards.`
   },
 
   research: {
@@ -21,7 +28,7 @@ const PROMPTS = {
   },
 
   evidence: {
-    requirement: `Base your educational guidance on EVIDENCE from your web research. Cite specific findings when identifying red flags.`,
+    requirement: `Base your educational guidance on EVIDENCE from your web research. Cite specific findings when identifying red flags, including formatting inconsistencies that don't match the claimed organization's standards.`,
     
     legitimateCheck: `If web research shows the communication appears legitimate, acknowledge this while still providing educational value about verification best practices.`,
     
@@ -39,13 +46,13 @@ const PROMPTS = {
     
     structure: `{
   "whatWeObserved": "Neutral, factual description of communication elements without judgment",
-  "redFlagsToConsider": ["Educational list of specific patterns that warrant attention", "Include WHY each pattern is concerning"],
+  "redFlagsToConsider": ["ONLY include HIGH-CONFIDENCE red flags that clearly suggest potential fraud", "Focus on: suspicious domains, obvious spoofing, urgent threats, unusual requests for credentials", "AVOID: minor formatting differences, common business practices, regional variations"],
   "verificationSteps": ["Specific steps to independently verify this communication", "Official channels to contact", "Methods to confirm legitimacy"],
   "whyVerificationMatters": "Educational explanation of why these patterns matter and how social engineering works",
   "organizationSpecificGuidance": "Specific advice based on the type of organization mentioned (bank, government, tech company, etc.)"
 }`,
 
-    safetyNote: `CRITICAL: Always emphasize verification through official channels rather than making definitive security judgments.`,
+    safetyNote: `CRITICAL: Always emphasize verification through official channels rather than making definitive security judgments. Only flag STRONG indicators of potential fraud.`,
 
     insufficientInfoTemplate: `For cases needing more information:
 {
