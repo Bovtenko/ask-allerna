@@ -27,17 +27,15 @@ const AskAllerna = () => {
     setCompletedStages(newCompleted);
   }, [streamingData]);
 
-  // ULTRA-OPTIMIZED: Smart routing with better cost control
+  // Smart routing streaming analysis
   const runStreamingAnalysis = async (incident) => {
     let quickData = null;
     let businessData = null;
     let threatsData = null;
 
     try {
-      // Stage 1: Quick Analysis (always runs)
+      // Stage 1: Quick Analysis
       setAnalysisStage('Performing initial security assessment...');
-      console.log('[UI] Starting quick analysis...');
-      
       const quickResponse = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,46 +46,27 @@ const AskAllerna = () => {
         quickData = await quickResponse.json();
         setStreamingData(prev => ({ ...prev, quick: quickData }));
         console.log('[UI] Quick analysis completed');
-      } else {
-        throw new Error(`Quick analysis failed: ${quickResponse.status}`);
       }
 
-      // IMPROVED SMART ROUTING: Better risk detection
+      // Smart routing logic
       const redFlagCount = quickData?.redFlagsToConsider?.length || 0;
       const observedText = (quickData?.whatWeObserved || '').toLowerCase();
       const redFlagsText = (quickData?.redFlagsToConsider || []).join(' ').toLowerCase();
       const allText = `${observedText} ${redFlagsText}`;
       
-      // Comprehensive high-risk keyword detection
       const highRiskKeywords = [
-        // Contact method red flags
-        'whatsapp', 'telegram', 'wechat', 'viber',
-        // Urgency indicators
-        'urgent', 'immediate', 'act now', 'limited time', 'expires',
-        // Financial red flags
-        'wire transfer', 'western union', 'moneygram', 'bitcoin', 'cryptocurrency',
-        'gift card', 'itunes', 'google play', 'amazon card',
-        // Account security
-        'suspended', 'compromised', 'verify account', 'update payment',
-        'click here', 'login', 'confirm identity',
-        // Lottery/inheritance scams
-        'winner', 'lottery', 'prize', 'inheritance', 'beneficiary',
-        'congratulations', 'selected',
-        // Employment scams
+        'whatsapp', 'telegram', 'urgent', 'limited time', 'expires',
+        'wire transfer', 'bitcoin', 'cryptocurrency', 'gift card',
+        'suspended', 'compromised', 'verify account', 'click here',
+        'winner', 'lottery', 'prize', 'inheritance', 'congratulations',
         'work from home', 'easy money', 'daily earnings',
-        // General suspicious
         'suspicious', 'scam', 'fraud', 'phishing', 'unsolicited'
       ];
       
       const hasHighRiskKeywords = highRiskKeywords.some(keyword => allText.includes(keyword));
-      
-      // Check for financial amounts (red flag)
-      const hasFinancialAmounts = /\$\d+/.test(allText) || /\d+\s*(dollars?|usd|euro|pounds?)/.test(allText);
-      
-      // Check for phone numbers (potential red flag)
+      const hasFinancialAmounts = /\$\d+/.test(allText);
       const hasPhoneNumbers = /\+?\d{1,3}[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/.test(incident);
       
-      // Only skip expensive analysis for VERY low risk communications
       const isVeryLowRisk = redFlagCount <= 1 && 
                            !hasHighRiskKeywords && 
                            !hasFinancialAmounts && 
@@ -95,19 +74,10 @@ const AskAllerna = () => {
                            !allText.includes('job') &&
                            !allText.includes('offer');
 
-      console.log('[UI] Risk assessment:', {
-        redFlagCount,
-        hasHighRiskKeywords,
-        hasFinancialAmounts, 
-        hasPhoneNumbers,
-        isVeryLowRisk
-      });
-
       if (isVeryLowRisk) {
-        console.log('[UI] Very low risk detected - skipping expensive analysis');
+        console.log('[UI] Low risk - skipping expensive analysis');
         setAnalysisStage('Low risk communication - analysis complete');
         
-        // Provide minimal responses for truly legitimate communications
         const basicBusinessData = {
           businessVerification: {
             claimedOrganization: "Low-risk communication - detailed verification not required",
@@ -148,104 +118,59 @@ const AskAllerna = () => {
         };
 
         setAnalysis(combinedAnalysis);
-        return; // Exit early - major cost savings
+        return;
       }
 
-      // HIGH RISK: Run comprehensive analysis with robust error handling
+      // High risk - run full analysis
       console.log('[UI] High risk detected - running comprehensive analysis');
       setAnalysisStage('High risk patterns detected - running comprehensive verification...');
 
-      // Business verification with error handling
       const businessPromise = fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ incident, analysisType: 'business' })
       }).then(async response => {
         if (response.ok) {
-          const data = await response.json();
-          console.log('[UI] Business verification completed successfully');
-          return data;
-        } else {
-          console.error('[UI] Business verification failed:', response.status);
-          throw new Error(`Business verification failed: ${response.status}`);
+          return await response.json();
         }
+        throw new Error(`Business verification failed: ${response.status}`);
       }).catch(error => {
         console.error('[UI] Business analysis error:', error);
         return {
           businessVerification: {
-            claimedOrganization: "Verification temporarily unavailable due to system error",
-            officialContacts: [
-              "Manual verification required - visit official website directly",
-              "Contact through verified official channels only"
-            ],
-            comparisonFindings: [
-              "Automated verification unavailable - exercise extra caution",
-              "Manually cross-reference all provided contact information"
-            ],
-            officialAlerts: [
-              "Check official organization website for fraud warnings",
-              "Search for recent security advisories about this organization"
-            ]
+            claimedOrganization: "Verification temporarily unavailable",
+            officialContacts: ["Manual verification required"],
+            comparisonFindings: ["Automated verification unavailable"],
+            officialAlerts: ["Check official sources directly"]
           }
         };
       });
 
-      // Threat intelligence with error handling
       const threatsPromise = fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ incident, analysisType: 'threats' })
       }).then(async response => {
         if (response.ok) {
-          const data = await response.json();
-          console.log('[UI] Threat intelligence completed successfully');
-          return data;
-        } else {
-          console.error('[UI] Threat intelligence failed:', response.status);
-          throw new Error(`Threat intelligence failed: ${response.status}`);
+          return await response.json();
         }
+        throw new Error(`Threat intelligence failed: ${response.status}`);
       }).catch(error => {
         console.error('[UI] Threats analysis error:', error);
         return {
           threatIntelligence: {
-            knownScamReports: [
-              "Automated threat analysis temporarily unavailable",
-              "Manually check FTC fraud reports and IC3 complaints",
-              "Search for recent reports of similar suspicious communications"
-            ],
-            similarIncidents: [
-              "Manual research recommended through security vendor websites",
-              "Check recent cybersecurity blogs for similar attack patterns",
-              "Review fraud reporting sites for comparable incidents"
-            ],
-            securityAdvisories: [
-              "Check CISA.gov for latest cybersecurity advisories",
-              "Review FBI IC3 alerts for related threat patterns",
-              "Consult your organization's security team for guidance"
-            ]
+            knownScamReports: ["Threat analysis temporarily unavailable"],
+            similarIncidents: ["Manual research recommended"],
+            securityAdvisories: ["Check official security advisories"]
           },
           currentThreatLandscape: {
-            industryTrends: [
-              "Current automated threat analysis limited due to system issue",
-              "Consult security vendor threat intelligence reports manually",
-              "Review recent industry security publications"
-            ],
-            recentCampaigns: [
-              "Manual research recommended for latest threat campaigns",
-              "Check security vendor blogs for recent attack trends",
-              "Review government cybersecurity alerts for current campaigns"
-            ],
-            officialWarnings: [
-              "Visit CISA.gov for latest official cybersecurity warnings",
-              "Check FBI and FTC websites for current fraud alerts",
-              "Review your industry's security advisories"
-            ]
+            industryTrends: ["Current threat data temporarily unavailable"],
+            recentCampaigns: ["Manual research recommended"],
+            officialWarnings: ["Check official alerts"]
           }
         };
       });
 
-      // Wait for both analyses to complete
-      console.log('[UI] Running business and threat analysis in parallel...');
       [businessData, threatsData] = await Promise.all([businessPromise, threatsPromise]);
 
       setStreamingData(prev => ({ 
@@ -254,9 +179,6 @@ const AskAllerna = () => {
         threats: threatsData
       }));
 
-      console.log('[UI] Comprehensive analysis completed successfully');
-
-      // Combine all analysis data
       const combinedAnalysis = {
         whatWeObserved: quickData?.whatWeObserved || "Analysis completed",
         redFlagsToConsider: quickData?.redFlagsToConsider || [],
@@ -271,25 +193,22 @@ const AskAllerna = () => {
       setAnalysis(combinedAnalysis);
 
     } catch (error) {
-      console.error('[UI] Critical analysis error:', error);
+      console.error('[UI] Analysis error:', error);
       setError(`Analysis error: ${error.message}`);
       
-      // Comprehensive fallback analysis
       setAnalysis({
-        whatWeObserved: "System error occurred during security analysis - manual review required",
+        whatWeObserved: "System error occurred during security analysis",
         redFlagsToConsider: [
           "Automated security analysis temporarily unavailable",
-          "Manual security review strongly recommended", 
-          "Exercise heightened caution until manual verification complete"
+          "Manual security review strongly recommended"
         ],
         verificationSteps: [
-          "Contact your IT security team immediately for manual analysis",
-          "Do not interact with the communication until verification complete",
-          "Use only official contact methods to verify sender legitimacy",
-          "Document the communication for security team review"
+          "Contact your IT security team immediately",
+          "Do not interact with the communication until verified",
+          "Use only official contact methods to verify sender"
         ],
-        whyVerificationMatters: "When automated security tools are unavailable, manual verification becomes critical for protection against sophisticated social engineering attacks.",
-        organizationSpecificGuidance: `System error occurred: ${error.message}. Follow your organization's incident response procedures for suspicious communications during system outages.`
+        whyVerificationMatters: "When automated security tools are unavailable, manual verification becomes critical.",
+        organizationSpecificGuidance: `System error: ${error.message}. Follow incident response procedures.`
       });
     }
   };
@@ -317,7 +236,7 @@ const AskAllerna = () => {
     setCompletedStages([]);
   };
 
-  // Generate comprehensive report using streaming data
+  // FIXED: Generate report with COMPLETE input text (no truncation)
   const generateReport = () => {
     const timestamp = new Date().toLocaleString('en-US', {
       weekday: 'long',
@@ -332,7 +251,6 @@ const AskAllerna = () => {
 
     const reportId = `ALR-${Date.now().toString().slice(-8)}`;
 
-    // Use streaming data for comprehensive report
     const reportData = {
       whatWeObserved: streamingData.quick?.whatWeObserved || "Analysis completed",
       redFlagsToConsider: streamingData.quick?.redFlagsToConsider || [],
@@ -347,7 +265,7 @@ const AskAllerna = () => {
     const report = `=== ASK ALLERNA SECURITY EDUCATION REPORT ===
 
 INCIDENT SUMMARY:
-${input.length > 200 ? input.substring(0, 200) + '...' : input}
+${input}
 
 WHAT WE OBSERVED:
 ${reportData.whatWeObserved}
@@ -408,7 +326,7 @@ REPORT DETAILS:
 - Generated: ${timestamp}
 - Report ID: ${reportId}
 - Platform: Ask Allerna Security Education Platform
-- Analysis Engine: Claude Sonnet 4 with Ultra-Optimized Intelligence
+- Analysis Engine: Claude Sonnet 4 with Optimized Intelligence
 
 IMPORTANT DISCLAIMER:
 This analysis is for educational purposes only. Always verify through 
@@ -475,7 +393,7 @@ official channels and follow your organization's security protocols.
           <p className="text-gray-600">Security Education & Red Flag Detection Platform</p>
           <div className="mt-2 flex items-center justify-center gap-2 text-sm text-green-600">
             <Search className="w-4 h-4" />
-            <span>Powered by Ultra-Optimized Intelligence</span>
+            <span>Powered by Optimized Intelligence</span>
           </div>
         </div>
         
@@ -522,7 +440,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <div className="flex flex-col items-center">
-                    <span>Ultra-Optimized Analysis...</span>
+                    <span>Optimized Analysis...</span>
                     {analysisStage && (
                       <span className="text-sm opacity-80 mt-1">{analysisStage}</span>
                     )}
@@ -539,7 +457,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
         </div>
       </div>
 
-      {/* FIXED: Streaming Dashboard with Proper Loading States */}
+      {/* Streaming Dashboard */}
       {(completedStages.length > 0 || isAnalyzing) && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
@@ -602,7 +520,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </>
           )}
 
-          {/* FIXED: Business Verification - Shows loading after quick analysis */}
+          {/* Business Verification */}
           {(streamingData.business || (isAnalyzing && completedStages.includes('quick'))) && (
             <div className="mb-6 animate-fade-in">
               <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
@@ -660,7 +578,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </div>
           )}
 
-          {/* FIXED: Threat Intelligence - Shows loading after quick analysis (not business) */}
+          {/* Threat Intelligence */}
           {(streamingData.threats || (isAnalyzing && completedStages.includes('quick'))) && (
             <>
               <div className="mb-6 animate-fade-in">
@@ -865,8 +783,8 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
 
       {/* Footer */}
       <div className="mt-4 text-center text-sm text-gray-500">
-        <p>🔒 Ask Allerna helps you learn to identify social engineering patterns through ultra-optimized threat intelligence.</p>
-        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Ultra-Optimized Research • Educational Focus</p>
+        <p>🔒 Ask Allerna helps you learn to identify social engineering patterns through optimized threat intelligence.</p>
+        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Optimized Research • Educational Focus</p>
       </div>
     </div>
   );
