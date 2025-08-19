@@ -87,6 +87,7 @@ const AskAllerna = () => {
     setAdvancedAnalysis(null);
     setShowUpgradeOption(false);
     setTotalCost(0);
+    setAnalysisStage('basic');
     
     await runBasicAnalysis(input);
     
@@ -100,6 +101,7 @@ const AskAllerna = () => {
 
     setIsAnalyzing(true);
     setShowUpgradeOption(false);
+    setAnalysisStage('advanced');
     
     await runAdvancedAnalysis(input, basicAnalysis);
     
@@ -325,6 +327,25 @@ official channels and follow your organization's security protocols.
         </div>
       </div>
 
+      {/* Loading State for Basic Analysis */}
+      {isAnalyzing && analysisStage === 'basic' && (
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-600 via-green-600 via-emerald-600 to-green-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white relative z-10"></div>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Running Quick Security Check</h2>
+            <p className="text-gray-600">Analyzing patterns and identifying red flags...</p>
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-sm text-green-700">⚡ Fast analysis in progress • Cost: $0.05 • ~8 seconds</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Basic Analysis Results */}
       {basicAnalysis && (
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
@@ -388,31 +409,21 @@ official channels and follow your organization's security protocols.
           </div>
 
           {/* Upgrade Option */}
-          {showUpgradeOption && (
+          {showUpgradeOption && !isAnalyzing && (
             <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
               <div className="text-center">
                 <TrendingUp className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Need Deeper Investigation?</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Need Professional Investigation?</h3>
                 <p className="text-gray-600 mb-4">
-                  Run detailed business verification and threat intelligence analysis
+                  Get detailed business verification and real-time threat intelligence
                 </p>
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={upgradeToAdvanced}
-                    disabled={isAnalyzing}
                     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:opacity-90 font-medium flex items-center gap-2"
                   >
-                    {isAnalyzing && analysisStage === 'advanced' ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Running Detailed Analysis...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-5 h-5" />
-                        Run Detailed Analysis (+$0.22)
-                      </>
-                    )}
+                    <Search className="w-5 h-5" />
+                    Run Professional Investigation (+$0.22)
                   </button>
                   <button
                     onClick={() => setShowUpgradeOption(false)}
@@ -422,11 +433,94 @@ official channels and follow your organization's security protocols.
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Includes: Business verification • Threat intelligence • Current scam reports
+                  Includes: Official contact verification • Current scam reports • Threat intelligence
                 </p>
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Loading State for Advanced Analysis */}
+      {isAnalyzing && analysisStage === 'advanced' && (
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 via-blue-600 via-purple-600 to-blue-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white relative z-10"></div>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Running Professional Investigation</h2>
+            <p className="text-gray-600">Conducting business verification and threat intelligence research...</p>
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-700">🔍 Deep analysis in progress • Additional cost: $0.22 • ~25 seconds</p>
+            </div>
+            
+            {/* Loading steps */}
+            <div className="mt-4 space-y-2 text-sm text-gray-600">
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-pulse-slow">🔍</div>
+                <span>Verifying official business contacts...</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-pulse-slow">🚨</div>
+                <span>Searching current threat databases...</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-pulse-slow">📊</div>
+                <span>Analyzing recent scam campaigns...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Placeholder for Advanced Analysis - Shows immediately when upgrade is clicked */}
+      {isAnalyzing && analysisStage === 'advanced' && (
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-2">
+              <Search className="w-6 h-6 text-blue-600" />
+              Professional Investigation Results
+            </h2>
+            <p className="text-sm text-gray-600">Additional Cost: $0.22 • Total: $0.27 • Analysis Time: ~25 seconds</p>
+          </div>
+
+          <div className="space-y-4">
+            {/* Business Verification Placeholder */}
+            <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
+              <h3 className="font-bold text-cyan-800 mb-3 flex items-center gap-2">
+                🏢 Business Verification
+                <div className="animate-pulse-slow text-sm">⏳ Loading...</div>
+              </h3>
+              <div className="text-cyan-600 animate-pulse-slow">
+                🔍 Verifying claimed organization contacts and searching for official warnings...
+              </div>
+            </div>
+
+            {/* Threat Intelligence Placeholder */}
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+              <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
+                🚨 Threat Intelligence
+                <div className="animate-pulse-slow text-sm">⏳ Loading...</div>
+              </h3>
+              <div className="text-red-600 animate-pulse-slow">
+                🔍 Searching threat databases and scam reports...
+              </div>
+            </div>
+
+            {/* Current Threat Landscape Placeholder */}
+            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+              <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
+                📊 Current Threat Landscape
+                <div className="animate-pulse-slow text-sm">⏳ Loading...</div>
+              </h3>
+              <div className="text-orange-600 animate-pulse-slow">
+                🔍 Analyzing current threat trends and recent campaigns...
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
