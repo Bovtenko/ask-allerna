@@ -63,6 +63,11 @@ export default async function handler(req, res) {
       messages: [{ 
         role: "user", 
         content: fullPrompt 
+      }],
+      tools: [{
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 10
       }]
     };
 

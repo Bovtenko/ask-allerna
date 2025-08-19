@@ -10,13 +10,13 @@ IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', {
       day: 'numeric' 
     })}. Use this for any date-related analysis.`,
     
-    withThreatIntel: `Use web search to gather current threat intelligence before providing your educational analysis. Search for recent reports about domains, phone numbers, or similar attack patterns mentioned in the incident.`,
+    withThreatIntel: `MANDATORY: Use web search extensively to gather current threat intelligence before providing your educational analysis. You MUST search for recent reports about domains, phone numbers, or similar attack patterns mentioned in the incident. Search multiple times to gather comprehensive intelligence.`,
     
     balanced: `Important: Many communications that seem unusual are actually legitimate. Focus on educational red flags that users should be aware of, while encouraging independent verification through official channels. Pay attention to formatting inconsistencies that don't match organizational standards.`
   },
 
   research: {
-    instruction: `REQUIRED: Use web search extensively to research the following before providing analysis:`,
+    instruction: `MANDATORY: Use web search extensively to research ALL of the following before providing analysis:`,
     
     domains: `1. Search for any domains mentioned - check recent security reports, domain reputation, registration details, and official business verification`,
     
