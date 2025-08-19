@@ -10,39 +10,27 @@ IMPORTANT: Today's date is ${new Date().toLocaleDateString('en-US', {
       day: 'numeric' 
     })}. Use this for any date-related analysis.`,
     
-    withThreatIntel: `MANDATORY: Use web search extensively to gather current threat intelligence before providing your educational analysis. You MUST search for recent reports about domains, phone numbers, or similar attack patterns mentioned in the incident. Search multiple times to gather comprehensive intelligence.`,
+    withThreatIntel: `Use web search to gather current threat intelligence. Search for recent reports about domains, phone numbers, or similar attack patterns.`,
     
     balanced: `Important: Many communications that seem unusual are actually legitimate. Focus on educational red flags that users should be aware of, while encouraging independent verification through official channels. Pay attention to formatting inconsistencies that don't match organizational standards.`
   },
 
   research: {
-    instruction: `MANDATORY: Use web search extensively to research ALL of the following before providing analysis:`,
+    instruction: `Use web search to research:`,
     
-    domains: `1. Search for any domains mentioned - check recent security reports, domain reputation, registration details, and official business verification`,
+    domains: `1. Verify domains - check recent security reports and registration details`,
     
-    phoneNumbers: `2. Search for any phone numbers - look for recent scam reports, fraud databases, and official business directory listings`,
+    phoneNumbers: `2. Check phone numbers - look for scam reports and official business listings`,
     
-    patterns: `3. Search for similar attack patterns or social engineering campaigns that match the language/tactics used`,
+    patterns: `3. Search for similar attack patterns matching these tactics`,
     
-    currentThreats: `4. Search for current security advisories or threat reports related to the organization or industry mentioned`,
+    currentThreats: `4. Find current security advisories for this organization/industry`,
     
-    businessVerification: `5. BUSINESS VERIFICATION: For each claimed organization, search for:
-    - Official website and contact information
-    - Legitimate phone numbers and email domains
-    - Recent scam reports targeting this organization
-    - Official social media accounts and verified contact methods`,
+    businessVerification: `5. BUSINESS VERIFICATION: Search for official contact info and recent scam reports about this organization`,
     
-    threatIntelligence: `6. THREAT INTELLIGENCE: Search for known scams involving:
-    - The exact email addresses, phone numbers, or domains mentioned
-    - Similar tracking numbers, account numbers, or reference codes
-    - The specific sender names or company names claimed
-    - Recent fraud alerts mentioning these contact details`,
+    threatIntelligence: `6. THREAT INTELLIGENCE: Search for known scams using these exact contacts/domains/numbers`,
     
-    industryTrends: `7. CURRENT SCAM TRENDS: Search for recent reports about:
-    - Current phishing campaigns in this industry (shipping, banking, etc.)
-    - Trending social engineering tactics being used this month
-    - Recent security advisories from official sources (CISA, FBI, etc.)
-    - Similar scam patterns reported in security blogs and news`
+    industryTrends: `7. CURRENT TRENDS: Search for recent phishing campaigns in this industry`
   },
 
   evidence: {
