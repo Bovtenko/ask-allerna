@@ -9,104 +9,119 @@ const AskAllerna = () => {
   const [reportText, setReportText] = useState('');
   const [error, setError] = useState(null);
   
-  // NEW: Progressive loading states
+  // NEW: Streaming analysis states
   const [analysisStage, setAnalysisStage] = useState('');
-  const [visibleSections, setVisibleSections] = useState([]);
+  const [streamingData, setStreamingData] = useState({
+    quick: null,
+    business: null,
+    threats: null
+  });
+  const [completedStages, setCompletedStages] = useState([]);
 
-  // NEW: Progressive section reveal effect
+  // NEW: Progressive section reveal effect (now based on data arrival)
   useEffect(() => {
-    if (analysis) {
-      // Reset visible sections when new analysis starts
-      setVisibleSections([]);
+    const newCompleted = [];
+    if (streamingData.quick) newCompleted.push('quick');
+    if (streamingData.business) newCompleted.push('business');
+    if (streamingData.threats) newCompleted.push('threats');
+    setCompletedStages(newCompleted);
+  }, [streamingData]);
+
+  // NEW: Streaming analysis function
+  const runStreamingAnalysis = async (incident) => {
+    try {
+      // Stage 1: Quick Analysis (5-8 seconds)
+      setAnalysisStage('Performing initial security assessment...');
+      const quickResponse = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ incident, analysisType: 'quick' })
+      });
       
-      const sections = ['observed', 'redFlags', 'verification', 'business', 'threat', 'landscape'];
+      if (quickResponse.ok) {
+        const quickData = await quickResponse.json();
+        setStreamingData(prev => ({ ...prev, quick: quickData }));
+        console.log('[UI] Quick analysis completed');
+      }
+
+      // Stage 2: Business Verification (15-20 seconds)
+      setAnalysisStage('Verifying business contacts and official information...');
+      const businessResponse = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ incident, analysisType: 'business' })
+      });
       
-      sections.forEach((section, index) => {
-        setTimeout(() => {
-          setVisibleSections(prev => [...prev, section]);
-        }, index * 700); // 700ms delay between each section
+      if (businessResponse.ok) {
+        const businessData = await businessResponse.json();
+        setStreamingData(prev => ({ ...prev, business: businessData }));
+        console.log('[UI] Business verification completed');
+      }
+
+      // Stage 3: Threat Intelligence (15-20 seconds)
+      setAnalysisStage('Researching threat intelligence and current threats...');
+      const threatsResponse = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ incident, analysisType: 'threats' })
+      });
+      
+      if (threatsResponse.ok) {
+        const threatsData = await threatsResponse.json();
+        setStreamingData(prev => ({ ...prev, threats: threatsData }));
+        console.log('[UI] Threat intelligence completed');
+      }
+
+      // Combine all data for final analysis object
+      const combinedAnalysis = {
+        whatWeObserved: streamingData.quick?.whatWeObserved || "Analysis completed",
+        redFlagsToConsider: streamingData.quick?.redFlagsToConsider || [],
+        verificationSteps: streamingData.quick?.verificationSteps || [],
+        whyVerificationMatters: streamingData.quick?.whyVerificationMatters || "Verification is important for security",
+        organizationSpecificGuidance: streamingData.quick?.organizationSpecificGuidance || "Follow standard security protocols",
+        businessVerification: businessData?.businessVerification || null,
+        threatIntelligence: threatsData?.threatIntelligence || null,
+        currentThreatLandscape: threatsData?.currentThreatLandscape || null
+      };
+
+      setAnalysis(combinedAnalysis);
+
+    } catch (error) {
+      console.error('[UI] Streaming analysis error:', error);
+      setError(error.message);
+      
+      // Provide fallback analysis
+      setAnalysis({
+        whatWeObserved: "System error occurred during analysis",
+        redFlagsToConsider: ["Automated analysis temporarily unavailable"],
+        verificationSteps: ["Contact your IT security team immediately"],
+        whyVerificationMatters: "When automated tools are unavailable, manual verification becomes critical.",
+        organizationSpecificGuidance: `System error: ${error.message}. Contact technical support if this persists.`
       });
     }
-  }, [analysis]);
+  };
 
   const analyzeIncident = async () => {
-    if (!input.trim()) {
-      return;
-    }
+    if (!input.trim()) return;
 
     setIsAnalyzing(true);
     setError(null);
-    setVisibleSections([]); // Reset sections
-    setAnalysisStage('Performing initial security assessment...');
+    setStreamingData({ quick: null, business: null, threats: null });
+    setCompletedStages([]);
+    setAnalysis(null);
     
-    // NEW: Progress messages during analysis
-    const stage1 = setTimeout(() => setAnalysisStage('Verifying business contacts and official information...'), 8000);
-    const stage2 = setTimeout(() => setAnalysisStage('Researching threat intelligence and scam reports...'), 20000);
-    const stage3 = setTimeout(() => setAnalysisStage('Analyzing current threat landscape...'), 35000);
-    const stage4 = setTimeout(() => setAnalysisStage('Finalizing comprehensive security analysis...'), 45000);
+    await runStreamingAnalysis(input);
     
-    try {
-      console.log('[UI] Starting analysis...');
-      
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          incident: input
-        })
-      });
-
-      console.log('[UI] API response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log('[UI] API error data:', errorData);
-        throw new Error(`Analysis failed: ${errorData.error || 'Unknown error'}`);
-      }
-
-      const data = await response.json();
-      console.log('[UI] Analysis data received');
-      setAnalysis(data);
-      
-    } catch (error) {
-      console.error("[UI] Analysis error:", error);
-      setError(error.message);
-      
-      // Provide fallback analysis for error cases
-      setAnalysis({
-        whatWeObserved: "System error occurred during analysis",
-        redFlagsToConsider: [
-          "Automated analysis temporarily unavailable",
-          "Manual review recommended for suspicious communications"
-        ],
-        verificationSteps: [
-          "Contact your IT security team immediately",
-          "Use official contact methods to verify suspicious communications",
-          "Do not interact with suspicious content until verified",
-          "Try the analysis again in a few minutes"
-        ],
-        whyVerificationMatters: "When automated tools are unavailable, manual verification becomes even more critical for security.",
-        organizationSpecificGuidance: `System error: ${error.message}. Contact technical support if this persists.`
-      });
-    } finally {
-      // NEW: Clear all progress timeouts
-      clearTimeout(stage1);
-      clearTimeout(stage2);
-      clearTimeout(stage3);
-      clearTimeout(stage4);
-      
-      setIsAnalyzing(false);
-      setAnalysisStage('');
-    }
+    setIsAnalyzing(false);
+    setAnalysisStage('');
   };
 
   const clearAnalysis = () => {
     setInput('');
     setAnalysis(null);
     setError(null);
-    setVisibleSections([]); // NEW: Reset visible sections
+    setStreamingData({ quick: null, business: null, threats: null });
+    setCompletedStages([]);
   };
 
   const generateReport = () => {
@@ -187,7 +202,7 @@ REPORT DETAILS:
 - Generated: ${timestamp}
 - Report ID: ${reportId}
 - Platform: Ask Allerna Security Education Platform
-- Analysis Engine: Claude Sonnet 4 with Real-time Threat Intelligence
+- Analysis Engine: Claude Sonnet 4 with Real-time Streaming Intelligence
 
 IMPORTANT DISCLAIMER:
 This analysis is for educational purposes only. Always verify through 
@@ -219,29 +234,25 @@ official channels and follow your organization's security protocols.
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes wave {
-          0% {
-            background-position: 200% 0;
-          }
-          100% {
-            background-position: -200% 0;
-          }
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
         .animate-wave {
           animation: wave 6s linear infinite;
         }
-        
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in {
           animation: fadeIn 0.6s ease-out forwards;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .animate-pulse-slow {
+          animation: pulse 2s infinite;
         }
         `
       }} />
@@ -258,7 +269,7 @@ official channels and follow your organization's security protocols.
           <p className="text-gray-600">Security Education & Red Flag Detection Platform</p>
           <div className="mt-2 flex items-center justify-center gap-2 text-sm text-green-600">
             <Search className="w-4 h-4" />
-            <span>Powered by Real-time Threat Intelligence</span>
+            <span>Powered by Real-time Streaming Intelligence</span>
           </div>
         </div>
         
@@ -294,7 +305,6 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </div>
           )}
 
-          {/* UPDATED: Enhanced loading button with progress stages */}
           <button
             onClick={analyzeIncident}
             disabled={isAnalyzing || !input.trim()}
@@ -306,7 +316,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <div className="flex flex-col items-center">
-                    <span>Analyzing with Real-time Intelligence...</span>
+                    <span>Streaming Real-time Analysis...</span>
                     {analysisStage && (
                       <span className="text-sm opacity-80 mt-1">{analysisStage}</span>
                     )}
@@ -323,18 +333,20 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
         </div>
       </div>
 
-      {/* UPDATED: Progressive loading sections */}
-      {analysis && (
+      {/* NEW: Streaming Dashboard - Shows sections as data arrives */}
+      {(completedStages.length > 0 || isAnalyzing) && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Security Education Analysis</h2>
             <div className="flex gap-2">
-              <button
-                onClick={generateReport}
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2"
-              >
-                📄 Generate Report
-              </button>
+              {completedStages.length >= 3 && (
+                <button
+                  onClick={generateReport}
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2"
+                >
+                  📄 Generate Report
+                </button>
+              )}
               <button
                 onClick={clearAnalysis}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg"
@@ -344,211 +356,232 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </div>
           </div>
 
-          {/* What We Observed */}
-          {visibleSections.includes('observed') && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
-                <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                  👁️ What We Observed
-                </h3>
-                <p className="text-blue-700">{analysis.whatWeObserved}</p>
+          {/* Quick Analysis Results - Show immediately when available */}
+          {streamingData.quick && (
+            <>
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                    👁️ What We Observed
+                  </h3>
+                  <p className="text-blue-700">{streamingData.quick.whatWeObserved}</p>
+                </div>
               </div>
-            </div>
+
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                    🚩 Red Flags to Consider
+                  </h3>
+                  <ul className="list-disc list-inside space-y-1 text-amber-700">
+                    {streamingData.quick.redFlagsToConsider.map((flag, index) => (
+                      <li key={index}>{flag}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                    ✅ Verification Steps
+                  </h3>
+                  <ul className="list-decimal list-inside space-y-1 text-green-700">
+                    {streamingData.quick.verificationSteps.map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Red Flags to Consider */}
-          {visibleSections.includes('redFlags') && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
-                <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
-                  🚩 Red Flags to Consider
-                </h3>
-                <ul className="list-disc list-inside space-y-1 text-amber-700">
-                  {analysis.redFlagsToConsider.map((flag, index) => (
-                    <li key={index}>{flag}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Verification Steps */}
-          {visibleSections.includes('verification') && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
-                <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
-                  ✅ Verification Steps
-                </h3>
-                <ul className="list-decimal list-inside space-y-1 text-green-700">
-                  {analysis.verificationSteps.map((step, index) => (
-                    <li key={index}>{step}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Business Verification */}
-          {visibleSections.includes('business') && analysis.businessVerification && (
+          {/* Business Verification - Show when available or loading */}
+          {(streamingData.business || (isAnalyzing && completedStages.includes('quick'))) && (
             <div className="mb-6 animate-fade-in">
               <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
                 <h3 className="font-bold text-cyan-800 mb-3 flex items-center gap-2">
                   🏢 Business Verification
+                  {!streamingData.business && isAnalyzing && (
+                    <div className="animate-pulse-slow text-sm">⏳ Loading...</div>
+                  )}
                 </h3>
-                <div className="space-y-3 text-cyan-700">
-                  <div>
-                    <strong>Claimed Organization:</strong> {analysis.businessVerification.claimedOrganization}
+                {streamingData.business ? (
+                  <div className="space-y-3 text-cyan-700">
+                    <div>
+                      <strong>Claimed Organization:</strong> {streamingData.business.businessVerification.claimedOrganization}
+                    </div>
+                    
+                    {streamingData.business.businessVerification.officialContacts?.length > 0 && (
+                      <div>
+                        <strong>Official Contacts:</strong>
+                        <ul className="list-disc list-inside ml-4 mt-1">
+                          {streamingData.business.businessVerification.officialContacts.map((contact, index) => (
+                            <li key={index}>{contact}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {streamingData.business.businessVerification.comparisonFindings?.length > 0 && (
+                      <div>
+                        <strong>Comparison Findings:</strong>
+                        <ul className="list-disc list-inside ml-4 mt-1">
+                          {streamingData.business.businessVerification.comparisonFindings.map((finding, index) => (
+                            <li key={index}>{finding}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {streamingData.business.businessVerification.officialAlerts?.length > 0 && (
+                      <div>
+                        <strong>Official Alerts:</strong>
+                        <ul className="list-disc list-inside ml-4 mt-1">
+                          {streamingData.business.businessVerification.officialAlerts.map((alert, index) => (
+                            <li key={index}>{alert}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  
-                  {analysis.businessVerification.officialContacts && analysis.businessVerification.officialContacts.length > 0 && (
-                    <div>
-                      <strong>Official Contacts:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.businessVerification.officialContacts.map((contact, index) => (
-                          <li key={index}>{contact}</li>
-                        ))}
-                      </ul>
+                ) : (
+                  <div className="text-cyan-600 animate-pulse-slow">
+                    🔍 Verifying business contacts and searching for official warnings...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Threat Intelligence - Show when available or loading */}
+          {(streamingData.threats || (isAnalyzing && completedStages.includes('business'))) && (
+            <>
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
+                    🚨 Threat Intelligence
+                    {!streamingData.threats && isAnalyzing && (
+                      <div className="animate-pulse-slow text-sm">⏳ Loading...</div>
+                    )}
+                  </h3>
+                  {streamingData.threats ? (
+                    <div className="space-y-3 text-red-700">
+                      {streamingData.threats.threatIntelligence?.knownScamReports?.length > 0 && (
+                        <div>
+                          <strong>Known Scam Reports:</strong>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {streamingData.threats.threatIntelligence.knownScamReports.map((report, index) => (
+                              <li key={index}>{report}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {streamingData.threats.threatIntelligence?.similarIncidents?.length > 0 && (
+                        <div>
+                          <strong>Similar Incidents:</strong>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {streamingData.threats.threatIntelligence.similarIncidents.map((incident, index) => (
+                              <li key={index}>{incident}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {streamingData.threats.threatIntelligence?.securityAdvisories?.length > 0 && (
+                        <div>
+                          <strong>Security Advisories:</strong>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {streamingData.threats.threatIntelligence.securityAdvisories.map((advisory, index) => (
+                              <li key={index}>{advisory}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  
-                  {analysis.businessVerification.comparisonFindings && analysis.businessVerification.comparisonFindings.length > 0 && (
-                    <div>
-                      <strong>Comparison Findings:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.businessVerification.comparisonFindings.map((finding, index) => (
-                          <li key={index}>{finding}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {analysis.businessVerification.officialAlerts && analysis.businessVerification.officialAlerts.length > 0 && (
-                    <div>
-                      <strong>Official Alerts:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.businessVerification.officialAlerts.map((alert, index) => (
-                          <li key={index}>{alert}</li>
-                        ))}
-                      </ul>
+                  ) : (
+                    <div className="text-red-600 animate-pulse-slow">
+                      🔍 Searching threat databases and scam reports...
                     </div>
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Threat Intelligence */}
-          {visibleSections.includes('threat') && analysis.threatIntelligence && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
-                <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
-                  🚨 Threat Intelligence
-                </h3>
-                <div className="space-y-3 text-red-700">
-                  {analysis.threatIntelligence.knownScamReports && analysis.threatIntelligence.knownScamReports.length > 0 && (
-                    <div>
-                      <strong>Known Scam Reports:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.threatIntelligence.knownScamReports.map((report, index) => (
-                          <li key={index}>{report}</li>
-                        ))}
-                      </ul>
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
+                    📊 Current Threat Landscape
+                    {!streamingData.threats && isAnalyzing && (
+                      <div className="animate-pulse-slow text-sm">⏳ Loading...</div>
+                    )}
+                  </h3>
+                  {streamingData.threats ? (
+                    <div className="space-y-3 text-orange-700">
+                      {streamingData.threats.currentThreatLandscape?.industryTrends?.length > 0 && (
+                        <div>
+                          <strong>Industry Trends:</strong>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {streamingData.threats.currentThreatLandscape.industryTrends.map((trend, index) => (
+                              <li key={index}>{trend}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {streamingData.threats.currentThreatLandscape?.recentCampaigns?.length > 0 && (
+                        <div>
+                          <strong>Recent Campaigns:</strong>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {streamingData.threats.currentThreatLandscape.recentCampaigns.map((campaign, index) => (
+                              <li key={index}>{campaign}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {streamingData.threats.currentThreatLandscape?.officialWarnings?.length > 0 && (
+                        <div>
+                          <strong>Official Warnings:</strong>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {streamingData.threats.currentThreatLandscape.officialWarnings.map((warning, index) => (
+                              <li key={index}>{warning}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  
-                  {analysis.threatIntelligence.similarIncidents && analysis.threatIntelligence.similarIncidents.length > 0 && (
-                    <div>
-                      <strong>Similar Incidents:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.threatIntelligence.similarIncidents.map((incident, index) => (
-                          <li key={index}>{incident}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {analysis.threatIntelligence.securityAdvisories && analysis.threatIntelligence.securityAdvisories.length > 0 && (
-                    <div>
-                      <strong>Security Advisories:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.threatIntelligence.securityAdvisories.map((advisory, index) => (
-                          <li key={index}>{advisory}</li>
-                        ))}
-                      </ul>
+                  ) : (
+                    <div className="text-orange-600 animate-pulse-slow">
+                      🔍 Analyzing current threat trends and recent campaigns...
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            </>
           )}
 
-          {/* Current Threat Landscape */}
-          {visibleSections.includes('landscape') && analysis.currentThreatLandscape && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
-                <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
-                  📊 Current Threat Landscape
-                </h3>
-                <div className="space-y-3 text-orange-700">
-                  {analysis.currentThreatLandscape.industryTrends && analysis.currentThreatLandscape.industryTrends.length > 0 && (
-                    <div>
-                      <strong>Industry Trends:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.currentThreatLandscape.industryTrends.map((trend, index) => (
-                          <li key={index}>{trend}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {analysis.currentThreatLandscape.recentCampaigns && analysis.currentThreatLandscape.recentCampaigns.length > 0 && (
-                    <div>
-                      <strong>Recent Campaigns:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.currentThreatLandscape.recentCampaigns.map((campaign, index) => (
-                          <li key={index}>{campaign}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {analysis.currentThreatLandscape.officialWarnings && analysis.currentThreatLandscape.officialWarnings.length > 0 && (
-                    <div>
-                      <strong>Official Warnings:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1">
-                        {analysis.currentThreatLandscape.officialWarnings.map((warning, index) => (
-                          <li key={index}>{warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+          {/* Final sections - show only when quick analysis is complete */}
+          {streamingData.quick && (
+            <>
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
+                    🏢 Organization-Specific Guidance
+                  </h3>
+                  <p className="text-purple-700">{streamingData.quick.organizationSpecificGuidance}</p>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Organization-Specific Guidance */}
-          {visibleSections.includes('landscape') && analysis.organizationSpecificGuidance && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-lg">
-                <h3 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
-                  🏢 Organization-Specific Guidance
-                </h3>
-                <p className="text-purple-700">{analysis.organizationSpecificGuidance}</p>
+              <div className="mb-6 animate-fade-in">
+                <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-lg">
+                  <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                    🎓 Why Verification Matters
+                  </h3>
+                  <p className="text-indigo-700">{streamingData.quick.whyVerificationMatters}</p>
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Why Verification Matters */}
-          {visibleSections.includes('landscape') && (
-            <div className="mb-6 animate-fade-in">
-              <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-lg">
-                <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
-                  🎓 Why Verification Matters
-                </h3>
-                <p className="text-indigo-700">{analysis.whyVerificationMatters}</p>
-              </div>
-            </div>
+            </>
           )}
         </div>
       )}
@@ -627,7 +660,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
       {/* Footer */}
       <div className="mt-4 text-center text-sm text-gray-500">
         <p>🔒 Ask Allerna helps you learn to identify social engineering patterns through real-time threat intelligence.</p>
-        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Real-time Web Research • Educational Focus</p>
+        <p className="mt-1 text-xs">Enhanced with Claude Sonnet 4 • Real-time Streaming Research • Educational Focus</p>
       </div>
     </div>
   );

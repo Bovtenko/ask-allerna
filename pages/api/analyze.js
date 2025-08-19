@@ -9,23 +9,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { incident } = req.body;
+    const { incident, analysisType = 'quick' } = req.body; // NEW: Support analysis types
     console.log('[API] Incident length:', incident ? incident.length : 0);
+    console.log('[API] Analysis type:', analysisType);
 
     if (!incident) {
       console.log('[API] Error: No incident data provided');
       return res.status(400).json({ error: 'No incident data provided' });
     }
 
-    // Check if API key exists
     if (!process.env.ANTHROPIC_API_KEY) {
       console.log('[API] Error: API key not configured');
       return res.status(500).json({ error: 'API key not configured' });
     }
 
-    console.log('[API] Building prompt...');
+    console.log('[API] Building prompt for analysis type:', analysisType);
     
-    // Get current date for context
     const currentDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -33,45 +32,104 @@ export default async function handler(req, res) {
       day: 'numeric' 
     });
     
-    // Build the complete prompt from components
-    const fullPrompt = [
-      PROMPTS.analysis.base,
-      `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
-      PROMPTS.analysis.balanced,
-      PROMPTS.research.instruction,
-      PROMPTS.research.domains,
-      PROMPTS.research.phoneNumbers, 
-      PROMPTS.research.patterns,
-      PROMPTS.research.currentThreats,
-      PROMPTS.evidence.requirement,
-      PROMPTS.evidence.legitimateCheck,
-      `\nINCIDENT TO ANALYZE: ${incident}`,
-      PROMPTS.analysis.withThreatIntel,
-      PROMPTS.format.jsonOnly,
-      `Respond with this exact JSON format:`,
-      PROMPTS.format.structure,
-      PROMPTS.format.safetyNote,
-      `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
-    ].join('\n\n');
+    // NEW: Different prompts for different analysis types
+    let fullPrompt;
+    let maxTokens;
+    let maxSearches;
+    
+    if (analysisType === 'quick') {
+      // Quick analysis - no web search, basic patterns only
+      fullPrompt = [
+        PROMPTS.analysis.base,
+        `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
+        PROMPTS.analysis.balanced,
+        `QUICK ANALYSIS MODE: Focus on immediate red flags and basic verification steps. Do NOT use web search tools. Base analysis on patterns and formatting only.`,
+        `\nINCIDENT TO ANALYZE: ${incident}`,
+        `Respond with this exact JSON format:`,
+        `{
+  "whatWeObserved": "Neutral, factual description of communication elements",
+  "redFlagsToConsider": ["MANDATORY: 2-4 immediate pattern-based red flags", "Focus on obvious formatting/language issues"],
+  "verificationSteps": ["Basic verification steps", "Official contact methods"],
+  "whyVerificationMatters": "Brief explanation of verification importance",
+  "organizationSpecificGuidance": "General guidance based on claimed organization"
+}`,
+        `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
+      ].join('\n\n');
+      maxTokens = 800;
+      maxSearches = 0;
+      
+    } else if (analysisType === 'business') {
+      // Business verification - focus on company research
+      fullPrompt = [
+        PROMPTS.analysis.base,
+        `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
+        `BUSINESS VERIFICATION MODE: Use web search to verify the claimed organization's official contact methods and find any recent scam warnings.`,
+        PROMPTS.research.domains,
+        PROMPTS.research.businessVerification,
+        `\nINCIDENT TO ANALYZE: ${incident}`,
+        `Focus specifically on business verification. Respond with this exact JSON format:`,
+        `{
+  "businessVerification": {
+    "claimedOrganization": "Name of organization claimed",
+    "officialContacts": ["Official contact methods found through web search"],
+    "comparisonFindings": ["How claimed contacts compare to official ones"],
+    "officialAlerts": ["Any scam warnings found about this organization"]
+  }
+}`,
+        `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
+      ].join('\n\n');
+      maxTokens = 1000;
+      maxSearches = 5;
+      
+    } else if (analysisType === 'threats') {
+      // Threat intelligence - focus on scam databases and current threats
+      fullPrompt = [
+        PROMPTS.analysis.base,
+        `IMPORTANT CONTEXT: Today is ${currentDate}. Use this date for any temporal analysis.`,
+        `THREAT INTELLIGENCE MODE: Use web search to find current scam reports, fraud databases, and recent threat campaigns matching this pattern.`,
+        PROMPTS.research.phoneNumbers,
+        PROMPTS.research.patterns,
+        PROMPTS.research.currentThreats,
+        `\nINCIDENT TO ANALYZE: ${incident}`,
+        `Focus specifically on threat intelligence. Respond with this exact JSON format:`,
+        `{
+  "threatIntelligence": {
+    "knownScamReports": ["Scam reports found through web search"],
+    "similarIncidents": ["Similar attack patterns found"],
+    "securityAdvisories": ["Official warnings found through research"]
+  },
+  "currentThreatLandscape": {
+    "industryTrends": ["Current scam trends found through web search"],
+    "recentCampaigns": ["Recent phishing campaigns found"],
+    "officialWarnings": ["Recent security alerts found"]
+  }
+}`,
+        `DO NOT output anything other than valid JSON. Your response must start with { and end with }.`
+      ].join('\n\n');
+      maxTokens = 1200;
+      maxSearches = 8;
+    }
 
-    console.log('[API] Making request to Anthropic API with Claude 3.5 Sonnet...');
+    console.log('[API] Making request to Anthropic API...');
     
     const anthropicPayload = {
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
+      max_tokens: maxTokens,
       temperature: 0.1,
       messages: [{ 
         role: "user", 
         content: fullPrompt 
-      }],
-      tools: [{
-        "type": "web_search_20250305",
-        "name": "web_search",
-        "max_uses": 3  // Start with just 3 searches to be conservative
       }]
     };
 
-    console.log('[API] Payload prepared, sending request...');
+    // Add web search tool only for business and threats analysis
+    if (maxSearches > 0) {
+      anthropicPayload.tools = [{
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": maxSearches
+      }];
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -93,24 +151,20 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     console.log('[API] Response received, parsing...');
-    console.log('[API] Full response structure:', JSON.stringify(data, null, 2));
     
     if (!data.content || !data.content[0]) {
       console.log('[API] Error: Invalid response format from Anthropic API', data);
       throw new Error('Invalid response format from Anthropic API');
     }
 
-    // Handle different response types (with and without tool use)
     let responseText = "";
     
-    // Look for the final text response after tool usage
     for (const content of data.content) {
       if (content.type === "text") {
         responseText += content.text;
       }
     }
     
-    // If no text found, try the first content item
     if (!responseText && data.content[0].text) {
       responseText = data.content[0].text;
     }
@@ -121,106 +175,63 @@ export default async function handler(req, res) {
     }
     
     console.log('[API] Response text length:', responseText.length);
-    console.log('[API] Response preview:', responseText.substring(0, 200));
     
     let analysis;
 
     try {
-      // Try to parse the JSON response
       analysis = JSON.parse(responseText);
-      console.log('[API] JSON parsed successfully');
-      
-      // Ensure required fields exist with better defaults
-      if (!analysis.whatWeObserved) analysis.whatWeObserved = "Analysis completed";
-      if (!analysis.redFlagsToConsider) analysis.redFlagsToConsider = [];
-      if (!analysis.verificationSteps) analysis.verificationSteps = [];
-      if (!analysis.whyVerificationMatters) analysis.whyVerificationMatters = "Verification helps protect against social engineering";
-      if (!analysis.organizationSpecificGuidance) analysis.organizationSpecificGuidance = "Follow your organization's security protocols";
-      
-      console.log('[API] Analysis structure after parsing:', {
-        hasRedFlags: Array.isArray(analysis.redFlagsToConsider),
-        redFlagsCount: analysis.redFlagsToConsider?.length || 0,
-        hasBusinessVerification: !!analysis.businessVerification,
-        hasThreatIntel: !!analysis.threatIntelligence,
-        hasCurrentThreats: !!analysis.currentThreatLandscape
-      });
-      
-      // Ensure new optional fields have proper structure
-      if (!analysis.businessVerification) analysis.businessVerification = null;
-      if (!analysis.threatIntelligence) analysis.threatIntelligence = null;
-      if (!analysis.currentThreatLandscape) analysis.currentThreatLandscape = null;
+      console.log('[API] JSON parsed successfully for', analysisType);
       
     } catch (parseError) {
       console.log('[API] JSON parsing failed:', parseError);
-      console.log('[API] Raw response:', responseText);
       
-      // Fallback if JSON parsing fails
-      analysis = {
-        whatWeObserved: "Analysis completed but formatting error occurred",
-        redFlagsToConsider: ["System formatting error - manual review recommended"],
-        verificationSteps: [
-          "Contact your IT security team for manual analysis",
-          "Follow standard verification procedures for suspicious communications"
-        ],
-        whyVerificationMatters: "When automated analysis encounters errors, human verification becomes even more critical for security.",
-        organizationSpecificGuidance: `Analysis failed due to formatting error: ${parseError.message}. Raw response available for manual review.`
-      };
+      // Fallback based on analysis type
+      if (analysisType === 'quick') {
+        analysis = {
+          whatWeObserved: "Analysis completed but formatting error occurred",
+          redFlagsToConsider: ["System formatting error - manual review recommended"],
+          verificationSteps: ["Contact your IT security team for manual analysis"],
+          whyVerificationMatters: "When automated analysis encounters errors, human verification becomes critical.",
+          organizationSpecificGuidance: "Analysis failed due to formatting error."
+        };
+      } else if (analysisType === 'business') {
+        analysis = {
+          businessVerification: {
+            claimedOrganization: "Could not determine",
+            officialContacts: ["Business verification temporarily unavailable"],
+            comparisonFindings: ["Manual verification recommended"],
+            officialAlerts: ["Check official website directly"]
+          }
+        };
+      } else if (analysisType === 'threats') {
+        analysis = {
+          threatIntelligence: {
+            knownScamReports: ["Threat database temporarily unavailable"],
+            similarIncidents: ["Manual threat research recommended"],
+            securityAdvisories: ["Check official security advisories directly"]
+          },
+          currentThreatLandscape: {
+            industryTrends: ["Current threat data temporarily unavailable"],
+            recentCampaigns: ["Manual research recommended"],
+            officialWarnings: ["Check security vendor websites directly"]
+          }
+        };
+      }
     }
 
-    console.log('[API] Returning successful analysis');
+    console.log('[API] Returning successful analysis for', analysisType);
     return res.status(200).json(analysis);
 
   } catch (error) {
     console.error('[API] Complete analysis error:', error);
-    console.error('[API] Error stack:', error.stack);
     
-    // Determine error type for better user messaging
-    let errorType = "UNKNOWN_ERROR";
-    let userMessage = "An unexpected error occurred";
-    
-    if (error.message.includes("API key")) {
-      errorType = "API_KEY_ERROR";
-      userMessage = "API configuration issue";
-    } else if (error.message.includes("429")) {
-      errorType = "RATE_LIMIT_ERROR";
-      userMessage = "Service temporarily busy - please try again";
-    } else if (error.message.includes("timeout")) {
-      errorType = "TIMEOUT_ERROR";
-      userMessage = "Request timed out - please try again";
-    } else if (error.message.includes("network")) {
-      errorType = "NETWORK_ERROR";
-      userMessage = "Network connectivity issue";
-    }
-
-    // Return a comprehensive fallback response
+    // Return type-specific fallback
     const fallbackAnalysis = {
-      whatWeObserved: `System error occurred during analysis (${errorType})`,
-      redFlagsToConsider: [
-        "Automated analysis unavailable - manual review required",
-        "Exercise extra caution with suspicious communications during system issues"
-      ],
-      verificationSteps: [
-        "Report this incident to your IT security team immediately",
-        "Use alternative verification methods (official phone numbers, in-person contact)",
-        "Do not interact with suspicious content until verified",
-        "Try the analysis again in a few minutes"
-      ],
-      whyVerificationMatters: "When automated security tools are unavailable, manual verification becomes critical. Your security team can provide guidance and alternative analysis methods.",
-      organizationSpecificGuidance: `Technical error details: ${error.message}. Contact technical support if this persists. Error ID: ${errorType}-${Date.now()}`
-    };
-
-    console.log('[API] Returning fallback analysis due to error');
-    
-    // Also include the original error in the response for debugging
-    const debugResponse = {
-      ...fallbackAnalysis,
-      debugInfo: {
-        errorMessage: error.message,
-        errorType: errorType,
-        stack: error.stack?.substring(0, 500) // First 500 chars of stack trace
-      }
+      error: true,
+      message: error.message,
+      analysisType: req.body.analysisType || 'quick'
     };
     
-    return res.status(500).json(debugResponse);
+    return res.status(500).json(fallbackAnalysis);
   }
 }
