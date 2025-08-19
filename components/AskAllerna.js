@@ -14,8 +14,78 @@ const AskAllerna = () => {
   const [totalCost, setTotalCost] = useState(0);
   const [isAnalysisMode, setIsAnalysisMode] = useState(false);
   const [highlightedText, setHighlightedText] = useState('');
+  const [isHighlighting, setIsHighlighting] = useState(false);
 
-  // Text highlighting function
+  // AI-powered text highlighting function
+  const getAIHighlighting = async (text) => {
+    if (!text || text.length < 10) return '';
+    
+    try {
+      setIsHighlighting(true);
+      
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          incident: text, 
+          analysisType: 'highlight' 
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return applyAIHighlighting(text, data.highlights || []);
+      } else {
+        console.warn('AI highlighting failed, using fallback');
+        return highlightSuspiciousText(text);
+      }
+    } catch (error) {
+      console.warn('AI highlighting error:', error);
+      return highlightSuspiciousText(text);
+    } finally {
+      setIsHighlighting(false);
+    }
+  };
+
+  // Apply AI highlighting based on response
+  const applyAIHighlighting = (text, highlights) => {
+    let highlightedText = text;
+    
+    // Sort highlights by start position (descending) to avoid position shifts
+    const sortedHighlights = highlights.sort((a, b) => b.start - a.start);
+    
+    sortedHighlights.forEach(highlight => {
+      const { start, end, type, text: highlightText } = highlight;
+      
+      let className = '';
+      switch (type) {
+        case 'high_risk':
+          className = 'bg-red-200 text-red-800 px-1 rounded font-medium border border-red-300';
+          break;
+        case 'medium_risk':
+          className = 'bg-orange-200 text-orange-800 px-1 rounded font-medium border border-orange-300';
+          break;
+        case 'suspicious':
+          className = 'bg-yellow-200 text-yellow-800 px-1 rounded font-medium border border-yellow-300';
+          break;
+        case 'organization':
+          className = 'bg-blue-200 text-blue-800 px-1 rounded font-medium border border-blue-300';
+          break;
+        default:
+          className = 'bg-gray-200 text-gray-800 px-1 rounded font-medium border border-gray-300';
+      }
+      
+      const before = highlightedText.substring(0, start);
+      const after = highlightedText.substring(end);
+      const highlighted = `<span class="${className}">${highlightText}</span>`;
+      
+      highlightedText = before + highlighted + after;
+    });
+    
+    return highlightedText;
+  };
+
+  // Fallback regex-based highlighting (keeping your original)
   const highlightSuspiciousText = (text) => {
     if (!text) return '';
     let highlightedText = text;
@@ -52,34 +122,42 @@ const AskAllerna = () => {
     // Apply highlighting
     highRiskPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-red-100 text-red-900 px-2 py-1 rounded-md font-semibold border-l-4 border-red-500 shadow-sm">${match}</span>`
+        `<span class="bg-red-200 text-red-800 px-1 rounded font-medium border border-red-300">${match}</span>`
       );
     });
 
     mediumRiskPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-orange-100 text-orange-900 px-2 py-1 rounded-md font-semibold border-l-4 border-orange-500 shadow-sm">${match}</span>`
+        `<span class="bg-orange-200 text-orange-800 px-1 rounded font-medium border border-orange-300">${match}</span>`
       );
     });
 
     suspiciousPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-yellow-100 text-yellow-900 px-2 py-1 rounded-md font-semibold border-l-4 border-yellow-500 shadow-sm">${match}</span>`
+        `<span class="bg-yellow-200 text-yellow-800 px-1 rounded font-medium border border-yellow-300">${match}</span>`
       );
     });
 
     companyPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-blue-100 text-blue-900 px-2 py-1 rounded-md font-semibold border-l-4 border-blue-500 shadow-sm">${match}</span>`
+        `<span class="bg-blue-200 text-blue-800 px-1 rounded font-medium border border-blue-300">${match}</span>`
       );
     });
 
     return highlightedText;
   };
 
+  // Update highlighted text with AI analysis
   useEffect(() => {
-    if (isAnalysisMode) {
-      setHighlightedText(highlightSuspiciousText(input));
+    if (isAnalysisMode && input && input.length > 10) {
+      const debounceTimer = setTimeout(async () => {
+        const aiHighlighted = await getAIHighlighting(input);
+        setHighlightedText(aiHighlighted);
+      }, 1000); // 1 second debounce
+      
+      return () => clearTimeout(debounceTimer);
+    } else if (isAnalysisMode) {
+      setHighlightedText(input);
     }
   }, [input, isAnalysisMode]);
 
@@ -348,23 +426,31 @@ ANALYSIS DETAILS:
               {/* Color Legend */}
               {isAnalysisMode && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <div className="text-xs font-medium text-gray-700 mb-2">Threat Level Indicators:</div>
+                  <div className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    Threat Level Indicators:
+                    {isHighlighting && (
+                      <div className="flex items-center gap-1 text-blue-600">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                        <span>AI analyzing...</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-red-100 border-l-4 border-red-500 rounded shadow-sm"></div>
-                      <span className="font-medium">High Risk</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 bg-red-200 border border-red-300 rounded"></span>
+                      <span>High Risk</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-orange-100 border-l-4 border-orange-500 rounded shadow-sm"></div>
-                      <span className="font-medium">Medium Risk</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 bg-orange-200 border border-orange-300 rounded"></span>
+                      <span>Medium Risk</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-yellow-100 border-l-4 border-yellow-500 rounded shadow-sm"></div>
-                      <span className="font-medium">Suspicious</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></span>
+                      <span>Suspicious</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-blue-100 border-l-4 border-blue-500 rounded shadow-sm"></div>
-                      <span className="font-medium">Organization</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 bg-blue-200 border border-blue-300 rounded"></span>
+                      <span>Organization</span>
                     </div>
                   </div>
                 </div>

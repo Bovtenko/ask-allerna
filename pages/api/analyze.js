@@ -1,4 +1,4 @@
-// pages/api/analyze.js - Updated for Two-Tier Analysis System
+// pages/api/analyze.js - Updated with AI Highlighting Support
 
 export default async function handler(req, res) {
   console.log('[API] Request received:', req.method);
@@ -30,7 +30,30 @@ export default async function handler(req, res) {
     let maxTokens;
     let tools = [];
     
-    if (analysisType === 'basic') {
+    if (analysisType === 'highlight') {
+      // AI HIGHLIGHTING - Haiku 3.5 for speed and cost efficiency
+      model = "claude-3-5-haiku-20241022";
+      maxTokens = 200;
+      
+      fullPrompt = `Analyze this text for security threats and identify spans to highlight with their threat levels.
+
+Text: "${incident}"
+
+Identify and categorize text spans by threat level:
+- high_risk: URLs, phone numbers, financial amounts, crypto, wire transfers
+- medium_risk: urgency words, verification requests, personal info requests
+- suspicious: messaging apps (WhatsApp/Telegram), job offers, prizes, authority impersonation
+- organization: legitimate company/brand names
+
+Return ONLY this JSON format:
+{
+  "highlights": [
+    {"start": 0, "end": 10, "type": "high_risk", "text": "example text"},
+    {"start": 15, "end": 25, "type": "suspicious", "text": "WhatsApp"}
+  ]
+}`;
+
+    } else if (analysisType === 'basic') {
       // BASIC ANALYSIS - Haiku 3.5 for cost efficiency
       model = "claude-3-5-haiku-20241022";
       maxTokens = 300;
@@ -177,7 +200,12 @@ Respond with ONLY this JSON (no other text):
       console.log('[API] Full response:', responseText);
       
       // Fallback based on analysis type
-      if (analysisType === 'basic') {
+      if (analysisType === 'highlight') {
+        // Highlighting fallback - return empty highlights
+        analysis = {
+          highlights: []
+        };
+      } else if (analysisType === 'basic') {
         // Basic analysis fallback
         const hasWhatsApp = incident.toLowerCase().includes('whatsapp');
         const hasJobOffer = incident.toLowerCase().includes('job') || incident.toLowerCase().includes('work');
