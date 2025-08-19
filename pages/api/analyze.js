@@ -93,6 +93,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     console.log('[API] Response received, parsing...');
+    console.log('[API] Full response structure:', JSON.stringify(data, null, 2));
     
     if (!data.content || !data.content[0]) {
       console.log('[API] Error: Invalid response format from Anthropic API', data);
@@ -135,6 +136,14 @@ export default async function handler(req, res) {
       if (!analysis.verificationSteps) analysis.verificationSteps = [];
       if (!analysis.whyVerificationMatters) analysis.whyVerificationMatters = "Verification helps protect against social engineering";
       if (!analysis.organizationSpecificGuidance) analysis.organizationSpecificGuidance = "Follow your organization's security protocols";
+      
+      console.log('[API] Analysis structure after parsing:', {
+        hasRedFlags: Array.isArray(analysis.redFlagsToConsider),
+        redFlagsCount: analysis.redFlagsToConsider?.length || 0,
+        hasBusinessVerification: !!analysis.businessVerification,
+        hasThreatIntel: !!analysis.threatIntelligence,
+        hasCurrentThreats: !!analysis.currentThreatLandscape
+      });
       
       // Ensure new optional fields have proper structure
       if (!analysis.businessVerification) analysis.businessVerification = null;
