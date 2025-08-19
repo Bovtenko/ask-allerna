@@ -539,7 +539,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
         </div>
       </div>
 
-      {/* Streaming Dashboard */}
+      {/* FIXED: Streaming Dashboard with Proper Loading States */}
       {(completedStages.length > 0 || isAnalyzing) && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
@@ -602,7 +602,7 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </>
           )}
 
-          {/* Business Verification */}
+          {/* FIXED: Business Verification - Shows loading after quick analysis */}
           {(streamingData.business || (isAnalyzing && completedStages.includes('quick'))) && (
             <div className="mb-6 animate-fade-in">
               <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
@@ -660,8 +660,8 @@ Example: 'I received an email from support@amazom-security.com claiming my Prime
             </div>
           )}
 
-          {/* Threat Intelligence */}
-          {(streamingData.threats || (isAnalyzing && completedStages.includes('business'))) && (
+          {/* FIXED: Threat Intelligence - Shows loading after quick analysis (not business) */}
+          {(streamingData.threats || (isAnalyzing && completedStages.includes('quick'))) && (
             <>
               <div className="mb-6 animate-fade-in">
                 <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
