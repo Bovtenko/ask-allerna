@@ -177,18 +177,18 @@ const AskAllerna = () => {
     return highlightedText;
   };
 
-  // Update highlighted text with AI analysis - keep original text visible
+  // Update highlighted text with AI analysis - only on initial analysis, not on text changes
   useEffect(() => {
-    if (isAnalysisMode && input && input.length > 10) {
-      // Show original text immediately, then enhance with AI
+    if (isAnalysisMode && input && input.length > 10 && !basicAnalysis) {
+      // Only run AI highlighting on initial analysis, not when editing
       setHighlightedText(input);
       
       const debounceTimer = setTimeout(async () => {
         await getAIHighlighting(input);
-      }, 1000); // 1 second debounce
+      }, 1000);
       
       return () => clearTimeout(debounceTimer);
-    } else if (isAnalysisMode) {
+    } else if (isAnalysisMode && !basicAnalysis) {
       setHighlightedText(input);
     }
   }, [input, isAnalysisMode]);
@@ -480,6 +480,9 @@ ANALYSIS DETAILS:
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <div className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Threat Level Indicators:
+                    {basicAnalysis && (
+                      <span className="text-green-600 font-medium">✓ Analysis Complete</span>
+                    )}
                     {isHighlighting && (
                       <div className="flex items-center gap-1 text-blue-600">
                         <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
