@@ -94,13 +94,33 @@ export default async function handler(req, res) {
     const data = await response.json();
     console.log('[API] Response received, parsing...');
     
-    if (!data.content || !data.content[0] || !data.content[0].text) {
+    if (!data.content || !data.content[0]) {
       console.log('[API] Error: Invalid response format from Anthropic API', data);
       throw new Error('Invalid response format from Anthropic API');
     }
 
-    const responseText = data.content[0].text;
+    // Handle different response types (with and without tool use)
+    let responseText = "";
+    
+    // Look for the final text response after tool usage
+    for (const content of data.content) {
+      if (content.type === "text") {
+        responseText += content.text;
+      }
+    }
+    
+    // If no text found, try the first content item
+    if (!responseText && data.content[0].text) {
+      responseText = data.content[0].text;
+    }
+    
+    if (!responseText) {
+      console.log('[API] Error: No text content found in response', data);
+      throw new Error('No text content found in Anthropic API response');
+    }
+    
     console.log('[API] Response text length:', responseText.length);
+    console.log('[API] Response preview:', responseText.substring(0, 200));
     
     let analysis;
 
