@@ -52,25 +52,25 @@ const AskAllerna = () => {
     // Apply highlighting
     highRiskPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-red-200 text-red-800 px-1 rounded font-medium border border-red-300">${match}</span>`
+        `<span class="bg-red-100 text-red-900 px-2 py-1 rounded-md font-semibold border-l-4 border-red-500 shadow-sm">${match}</span>`
       );
     });
 
     mediumRiskPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-orange-200 text-orange-800 px-1 rounded font-medium border border-orange-300">${match}</span>`
+        `<span class="bg-orange-100 text-orange-900 px-2 py-1 rounded-md font-semibold border-l-4 border-orange-500 shadow-sm">${match}</span>`
       );
     });
 
     suspiciousPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-yellow-200 text-yellow-800 px-1 rounded font-medium border border-yellow-300">${match}</span>`
+        `<span class="bg-yellow-100 text-yellow-900 px-2 py-1 rounded-md font-semibold border-l-4 border-yellow-500 shadow-sm">${match}</span>`
       );
     });
 
     companyPatterns.forEach(pattern => {
       highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-blue-200 text-blue-800 px-1 rounded font-medium border border-blue-300">${match}</span>`
+        `<span class="bg-blue-100 text-blue-900 px-2 py-1 rounded-md font-semibold border-l-4 border-blue-500 shadow-sm">${match}</span>`
       );
     });
 
@@ -350,21 +350,21 @@ ANALYSIS DETAILS:
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <div className="text-xs font-medium text-gray-700 mb-2">Threat Level Indicators:</div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-red-200 border border-red-300 rounded"></span>
-                      <span>High Risk</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-red-100 border-l-4 border-red-500 rounded shadow-sm"></div>
+                      <span className="font-medium">High Risk</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-orange-200 border border-orange-300 rounded"></span>
-                      <span>Medium Risk</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-orange-100 border-l-4 border-orange-500 rounded shadow-sm"></div>
+                      <span className="font-medium">Medium Risk</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></span>
-                      <span>Suspicious</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-yellow-100 border-l-4 border-yellow-500 rounded shadow-sm"></div>
+                      <span className="font-medium">Suspicious</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-blue-200 border border-blue-300 rounded"></span>
-                      <span>Organization</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-blue-100 border-l-4 border-blue-500 rounded shadow-sm"></div>
+                      <span className="font-medium">Organization</span>
                     </div>
                   </div>
                 </div>
