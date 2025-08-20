@@ -14,23 +14,31 @@ const callPerplexityResearch = async (investigationTargets) => {
       return null;
     }
     
-    const researchQuery = `Research for cybersecurity verification:
+const researchQuery = `Conduct targeted cybersecurity research with specific searches:
 
-BUSINESSES TO VERIFY: ${businesses}
-- Find official contact information (phone, email, address)
-- Check BBB ratings and business legitimacy
-- Look for any fraud warnings or alerts about these companies
+PRIORITY SEARCHES (execute each specifically):
+1. "${businesses} fraud alert 2025" - Find company's official scam warnings from their website
+2. "BBB Scam Tracker ${businesses}" - Search BBB database for recent reports
+3. "${contacts} scam report" - Check if these specific contacts are reported as fraudulent
+4. "${patterns} scam 2025" - Find current trend analysis and official warnings
 
-CONTACTS TO CHECK: ${contacts}
-- Verify if these contacts match official company information
-- Search for scam reports involving these specific contacts
+BUSINESS VERIFICATION FOR: ${businesses}
+- Official website and verified contact information
+- Recent fraud alerts posted by the company itself
+- BBB profile and any scam reports
+- Government or security vendor advisories
 
-SUSPICIOUS PATTERNS: ${patterns}
-- Find recent security advisories about these attack patterns
-- Look for official warnings from government agencies or security vendors
+CONTACT VERIFICATION FOR: ${contacts}
+- Cross-reference with official company contacts
+- Search scam databases and reporting sites
+- Check for previous fraud reports involving these numbers/emails
 
-Provide citations for all findings. Focus on official sources like company websites, BBB, government agencies, and reputable security vendors.`;
+THREAT INTELLIGENCE FOR: ${patterns}
+- Current 2025 security advisories about these attack methods
+- Recent campaign reports from security vendors
+- Government warnings (FTC, FBI, CISA) about similar patterns
 
+IMPORTANT: Provide exact dates, specific citations, and direct quotes. Focus on findings from 2024-2025 for current relevance.`;
     console.log('[PERPLEXITY] Making research request for targets:', { businesses, contacts, patterns });
     
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -45,7 +53,7 @@ Provide citations for all findings. Focus on official sources like company websi
           role: 'user', 
           content: researchQuery 
         }],
-        max_tokens: 1200, // ✅ Increased tokens as recommended by Perplexity
+        max_tokens: 3000, // ✅ Increased tokens as recommended by Perplexity
         temperature: 0.1,
         return_citations: true // ✅ Confirmed correct parameter for citations
       })
@@ -58,9 +66,17 @@ Provide citations for all findings. Focus on official sources like company websi
     }
 
     const data = await response.json();
-    console.log('[PERPLEXITY] Research completed successfully');
-    console.log('[PERPLEXITY] Usage:', data.usage);
-    console.log('[PERPLEXITY] Research preview:', data.choices[0].message.content.substring(0, 200));
+console.log('[PERPLEXITY] Research completed successfully');
+console.log('[PERPLEXITY] Usage:', data.usage);
+
+// Check for low context and log warning
+if (data.usage && data.usage.search_context_size === 'low') {
+  console.log('[PERPLEXITY] Warning: Low search context - research may be incomplete');
+}
+
+console.log('[PERPLEXITY] Research preview:', data.choices[0].message.content.substring(0, 200));
+
+return data.choices[0].message.content;
     
     return data.choices[0].message.content;
     
