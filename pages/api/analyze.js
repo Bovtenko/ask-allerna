@@ -1,4 +1,4 @@
-// pages/api/analyze.js - Clean API File (NO REACT CODE!)
+// pages/api/analyze.js - Enhanced Two-Stage Analysis
 
 export default async function handler(req, res) {
   console.log('[API] Request received:', req.method);
@@ -61,81 +61,114 @@ Return ONLY this JSON format:
 }`;
 
     } else if (analysisType === 'basic') {
-      // BASIC ANALYSIS - Haiku 3.5 for cost efficiency
+      // ENHANCED BASIC ANALYSIS - Haiku 3.5 with comprehensive analysis and investigation targets
       model = "claude-3-5-haiku-20241022";
-      maxTokens = 400;
+      maxTokens = 700;
       
-      fullPrompt = `You are a cybersecurity educator analyzing this communication for learning purposes.
+      fullPrompt = `You are a cybersecurity expert providing comprehensive security education analysis.
 
 Communication: ${incident}
 
-Provide educational analysis focusing on patterns users should recognize. Even if the communication seems legitimate, include educational red flags that users should watch for in similar situations.
+Provide thorough educational analysis and extract specific items for potential verification. Even if the communication seems legitimate, include educational patterns users should recognize in similar situations.
 
 Respond with ONLY this JSON (no other text):
 {
-  "whatWeObserved": "Factual description of communication elements",
-  "redFlagsToConsider": ["Educational pattern 1", "Educational pattern 2", "Educational pattern 3"],
-  "verificationSteps": ["Specific step 1", "Specific step 2", "Specific step 3"],
-  "whyVerificationMatters": "Educational explanation of verification importance",
-  "organizationSpecificGuidance": "Basic guidance about claimed organization",
+  "whatWeObserved": "Detailed factual description of communication elements - who, what, when, how delivered, key claims made",
+  "redFlagsToConsider": ["Educational pattern 1 (specific to this case)", "Educational pattern 2 (specific to this case)", "Educational pattern 3 (specific to this case)", "Educational pattern 4 (general security awareness)"],
+  "verificationSteps": ["Specific verification step 1", "Specific verification step 2", "Specific verification step 3"],
+  "whyVerificationMatters": "Educational explanation of why independent verification is crucial for this type of communication",
+  "organizationSpecificGuidance": "Detailed guidance about the claimed organization and how to verify legitimately",
+  "investigationTargets": {
+    "businessesToVerify": ["Extract any company/organization names mentioned in the communication"],
+    "contactsToCheck": ["Extract phone numbers, email addresses, domains, or websites mentioned"],
+    "suspiciousPatterns": ["Identify specific suspicious patterns like 'WhatsApp job recruitment', 'vendor payment changes', 'urgent account verification'"],
+    "searchQueries": ["Specific web search to verify company official contacts", "Search for recent scam reports about this pattern", "Look up official company fraud warnings"]
+  },
   "analysisType": "basic",
   "upgradeAvailable": true
 }`;
 
     } else if (analysisType === 'advanced') {
-      // ADVANCED ANALYSIS - Sonnet 4 with web search
+      // FOCUSED PROFESSIONAL ANALYSIS - Sonnet 4 with targeted web search
       model = "claude-sonnet-4-20250514";
-      maxTokens = 1200;
+      maxTokens = 800;
       tools = [{
         "type": "web_search_20250305",
         "name": "web_search"
       }];
 
-      const basicContext = basicResults ? `
-Previous basic analysis found:
-- Observations: ${basicResults.whatWeObserved}
-- Red flags: ${basicResults.redFlagsToConsider?.join(', ')}
-` : '';
+      const targets = basicResults?.investigationTargets || {};
+      const businessesToVerify = targets.businessesToVerify?.join(', ') || 'None specified';
+      const contactsToCheck = targets.contactsToCheck?.join(', ') || 'None specified';
+      const suspiciousPatterns = targets.suspiciousPatterns?.join(', ') || 'None specified';
+      const searchQueries = targets.searchQueries?.join(', ') || 'None specified';
 
-      fullPrompt = `You are a cybersecurity expert conducting detailed verification analysis with web search capabilities.
+      fullPrompt = `Conduct targeted verification research based on preliminary analysis findings.
 
-${basicContext}
-
-Communication to analyze: ${incident}
+INVESTIGATION TARGETS FROM BASIC ANALYSIS:
+- Businesses to verify: ${businessesToVerify}
+- Contacts to check: ${contactsToCheck}
+- Suspicious patterns: ${suspiciousPatterns}
+- Specific searches needed: ${searchQueries}
 
 INSTRUCTIONS:
-1. Use web_search to verify any claimed organizations, phone numbers, or domains mentioned
-2. Search for recent scam reports involving similar contacts or patterns
-3. Look up official contact information for any organizations mentioned
-4. Search for current threat intelligence and security advisories
+1. Use web_search to verify ONLY the specific targets identified above
+2. Focus searches on official company information and recent scam reports
+3. Compare claimed contacts with official sources
+4. Look for security advisories related to the identified patterns
 
-After conducting your research, respond with ONLY this JSON structure (no other text):
-
+Respond with ONLY this JSON structure (no other text):
 {
   "businessVerification": {
-    "claimedOrganization": "Name of organization mentioned in communication",
-    "officialContacts": ["Official phone numbers from web search", "Verified email addresses", "Official websites found"],
-    "comparisonFindings": ["How claimed contacts compare to official ones", "Verification results from web search"],
-    "officialAlerts": ["Any fraud warnings found about this organization"]
+    "claimedOrganization": "Primary organization mentioned in targets",
+    "officialContacts": ["Verified official contact information found through web search"],
+    "comparisonFindings": ["How the provided contacts compare to verified official contacts"],
+    "officialAlerts": ["Any official fraud warnings or alerts found about this organization"]
   },
   "threatIntelligence": {
-    "knownScamReports": ["Scam reports found about these specific contacts", "Fraud database results"],
-    "similarIncidents": ["Similar attack patterns found online", "Related scam campaigns"],
-    "securityAdvisories": ["Official security warnings found"]
+    "knownScamReports": ["Specific scam reports found about these contacts, patterns, or organization"],
+    "similarIncidents": ["Similar attack patterns or incidents found through research"],
+    "securityAdvisories": ["Official security warnings or advisories related to the identified patterns"]
   },
   "currentThreatLandscape": {
-    "industryTrends": ["Current phishing trends found", "Industry-specific threats"],
-    "recentCampaigns": ["Ongoing scam campaigns found", "Recent attack patterns"],
-    "officialWarnings": ["Government or security vendor alerts"]
+    "industryTrends": ["Current cybersecurity trends related to the identified patterns"],
+    "recentCampaigns": ["Recent scam campaigns matching the suspicious patterns identified"],
+    "officialWarnings": ["Government, law enforcement, or security vendor warnings"]
   },
   "analysisType": "advanced"
 }
 
-IMPORTANT: Base all findings on actual web search results. If no relevant information is found through search, indicate this clearly in each section.`;
+IMPORTANT: Only search for and report findings directly related to the investigation targets. Base all findings on actual web search results.`;
     }
 
     console.log('[API] Making request - Model:', model, 'Tokens:', maxTokens);
     
+    // Enhanced request function with retry logic for overload errors
+    const makeAnthropicRequest = async (payload, retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.status === 529) {
+          const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+          console.log(`[API] Overloaded, retrying in ${delay}ms (attempt ${i + 1}/${retries})`);
+          if (i < retries - 1) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+        }
+        
+        return response;
+      }
+    };
+
     const anthropicPayload = {
       model: model,
       max_tokens: maxTokens,
@@ -150,27 +183,44 @@ IMPORTANT: Base all findings on actual web search results. If no relevant inform
       anthropicPayload.tools = tools;
     }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify(anthropicPayload)
-    });
+    const response = await makeAnthropicRequest(anthropicPayload);
 
     console.log('[API] Anthropic response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.log('[API] Anthropic error response:', errorText);
+      
+      // Special handling for overload errors in advanced analysis
+      if (response.status === 529 && analysisType === 'advanced') {
+        console.log('[API] Advanced analysis overloaded, providing fallback');
+        const fallbackAnalysis = {
+          businessVerification: {
+            claimedOrganization: "Analysis unavailable due to high system load",
+            officialContacts: ["Please verify contacts manually through official company website"],
+            comparisonFindings: ["Manual verification required - system currently overloaded"],
+            officialAlerts: ["Check company's official fraud alert page if available"]
+          },
+          threatIntelligence: {
+            knownScamReports: ["Search fraud databases manually for reports involving these contacts"],
+            similarIncidents: ["Check security forums for similar communication patterns"],
+            securityAdvisories: ["Review CISA.gov and FBI IC3 for related advisories"]
+          },
+          currentThreatLandscape: {
+            industryTrends: ["Consult current cybersecurity reports for relevant threats"],
+            recentCampaigns: ["Monitor security vendor blogs for recent campaign reports"],
+            officialWarnings: ["Review government security alerts and advisories"]
+          },
+          analysisType: "advanced"
+        };
+        return res.status(200).json(fallbackAnalysis);
+      }
+      
       throw new Error(`Anthropic API responded with status: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('[API] Response received, parsing...');
-    console.log('[API] Full response structure:', JSON.stringify(data, null, 2));
     
     if (!data.content || !data.content[0]) {
       throw new Error('Invalid response format from Anthropic API');
@@ -190,7 +240,7 @@ IMPORTANT: Base all findings on actual web search results. If no relevant inform
     }
     
     console.log('[API] Response length:', responseText.length);
-    console.log('[API] Response preview:', responseText.substring(0, 500));
+    console.log('[API] Response preview:', responseText.substring(0, 300));
     
     let analysis;
 
@@ -216,7 +266,6 @@ IMPORTANT: Base all findings on actual web search results. If no relevant inform
       
       analysis = JSON.parse(cleanedResponse);
       console.log('[API] JSON parsed successfully for', analysisType);
-      console.log('[API] Parsed analysis structure:', Object.keys(analysis));
       
     } catch (parseError) {
       console.log('[API] JSON parsing failed:', parseError);
@@ -231,26 +280,33 @@ IMPORTANT: Base all findings on actual web search results. If no relevant inform
         const hasWhatsApp = incident.toLowerCase().includes('whatsapp');
         const hasJobOffer = incident.toLowerCase().includes('job') || incident.toLowerCase().includes('work');
         const hasFinancialAmount = /\$\d+/.test(incident);
+        const hasPhoneNumber = /\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/.test(incident);
         
         analysis = {
-          whatWeObserved: "Communication contains elements that require further verification",
+          whatWeObserved: "Communication contains elements that require further verification based on observed patterns",
           redFlagsToConsider: [
             hasWhatsApp ? "Communication via WhatsApp instead of official channels" : "Verify sender through official channels",
-            hasJobOffer ? "Unsolicited job offer with limited verification" : "Unexpected communication pattern",
-            hasFinancialAmount ? "Financial amounts mentioned without context" : "Exercise standard caution"
+            hasJobOffer ? "Unsolicited job offer requiring verification" : "Unexpected communication pattern",
+            hasFinancialAmount ? "Financial amounts mentioned without clear context" : "Exercise standard verification",
+            hasPhoneNumber ? "Phone contact provided - verify through official sources" : "Confirm contact legitimacy"
           ],
           verificationSteps: [
             "Contact organization through official website",
-            "Verify sender through official channels",
-            "Research organization independently"
+            "Verify sender through known official channels",
+            "Research organization independently before responding"
           ],
-          whyVerificationMatters: "Independent verification helps confirm legitimacy and protects against social engineering attacks.",
-          organizationSpecificGuidance: "Check official company website for contact verification procedures.",
+          whyVerificationMatters: "Independent verification helps confirm legitimacy and protects against social engineering attacks that exploit trust.",
+          organizationSpecificGuidance: "Check the organization's official website for contact verification procedures and fraud warnings.",
+          investigationTargets: {
+            businessesToVerify: ["Organization mentioned in communication"],
+            contactsToCheck: ["Phone numbers and email addresses provided"],
+            suspiciousPatterns: ["Communication method and contact patterns"],
+            searchQueries: ["Organization official contact verification", "Recent scam reports with similar patterns"]
+          },
           analysisType: "basic",
           upgradeAvailable: true
         };
       } else if (analysisType === 'advanced') {
-        // More detailed fallback for advanced analysis
         analysis = {
           businessVerification: {
             claimedOrganization: "Analysis requires manual verification due to parsing error",

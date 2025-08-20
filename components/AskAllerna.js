@@ -17,14 +17,6 @@ const AskAllerna = () => {
   const [isHighlighting, setIsHighlighting] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
 
-  // TEMPORARY DEBUG - Remove after testing
-  useEffect(() => {
-    if (advancedAnalysis) {
-      console.log('COMPONENT DEBUG - Advanced Analysis Data:', advancedAnalysis);
-      console.log('COMPONENT DEBUG - Keys:', Object.keys(advancedAnalysis));
-    }
-  }, [advancedAnalysis]);
-
   // AI-powered text highlighting function with scanning animation
   const getAIHighlighting = async (text) => {
     if (!text || text.length < 10) return text;
@@ -131,7 +123,7 @@ const AskAllerna = () => {
     return highlightedText;
   };
 
-  // Fallback regex-based highlighting (keeping your original)
+  // Fallback regex-based highlighting
   const highlightSuspiciousText = (text) => {
     if (!text) return '';
     let highlightedText = text;
@@ -193,7 +185,7 @@ const AskAllerna = () => {
     return highlightedText;
   };
 
-  // Update highlighted text - TEMPORARILY USE REGEX ONLY
+  // Update highlighted text when in analysis mode
   useEffect(() => {
     if (isAnalysisMode && input) {
       // Use regex highlighting for now to avoid text corruption
@@ -299,18 +291,29 @@ const AskAllerna = () => {
   const generateReport = () => {
     const timestamp = new Date().toLocaleString();
     const reportId = `ALR-${Date.now().toString().slice(-8)}`;
-    const analysisLevel = advancedAnalysis ? 'Professional Investigation' : 'Quick Security Check';
+    const analysisLevel = advancedAnalysis ? 'Comprehensive Analysis with Business Verification' : 'Enhanced Security Analysis';
+
+    let investigationTargetsSection = '';
+    if (basicAnalysis?.investigationTargets) {
+      const targets = basicAnalysis.investigationTargets;
+      investigationTargetsSection = `
+INVESTIGATION TARGETS IDENTIFIED:
+Businesses to Verify: ${targets.businessesToVerify?.join(', ') || 'None'}
+Contacts to Check: ${targets.contactsToCheck?.join(', ') || 'None'}
+Suspicious Patterns: ${targets.suspiciousPatterns?.join(', ') || 'None'}
+Recommended Searches: ${targets.searchQueries?.join(', ') || 'None'}`;
+    }
 
     let advancedSection = '';
     if (advancedAnalysis) {
       advancedSection = `
-=== PROFESSIONAL INVESTIGATION RESULTS ===
+=== BUSINESS VERIFICATION RESULTS ===
 
-BUSINESS VERIFICATION:
-Organization: ${advancedAnalysis.businessVerification?.claimedOrganization || 'Not specified'}
-Official Contacts: ${advancedAnalysis.businessVerification?.officialContacts?.join(', ') || 'None found'}
-Comparison Findings: ${advancedAnalysis.businessVerification?.comparisonFindings?.join(', ') || 'None available'}
-Official Alerts: ${advancedAnalysis.businessVerification?.officialAlerts?.join(', ') || 'None found'}
+ORGANIZATION VERIFICATION:
+Claimed Organization: ${advancedAnalysis.businessVerification?.claimedOrganization || 'Not specified'}
+Official Contacts Found: ${advancedAnalysis.businessVerification?.officialContacts?.join(', ') || 'None found'}
+Comparison Analysis: ${advancedAnalysis.businessVerification?.comparisonFindings?.join(', ') || 'None available'}
+Official Fraud Alerts: ${advancedAnalysis.businessVerification?.officialAlerts?.join(', ') || 'None found'}
 
 THREAT INTELLIGENCE:
 Known Scam Reports: ${advancedAnalysis.threatIntelligence?.knownScamReports?.join(', ') || 'None found'}
@@ -330,7 +333,7 @@ ${input}
 
 ANALYSIS LEVEL: ${analysisLevel} ($${totalCost.toFixed(2)})
 
-=== QUICK SECURITY ANALYSIS ===
+=== ENHANCED SECURITY ANALYSIS ===
 
 WHAT WE OBSERVED:
 ${basicAnalysis?.whatWeObserved || 'Analysis not available'}
@@ -346,6 +349,8 @@ ${basicAnalysis?.whyVerificationMatters || 'Verification is essential for securi
 
 ORGANIZATION-SPECIFIC GUIDANCE:
 ${basicAnalysis?.organizationSpecificGuidance || 'Follow standard security protocols'}
+
+${investigationTargetsSection}
 
 ${advancedSection}
 
@@ -459,11 +464,11 @@ ANALYSIS DETAILS:
               <div className="mt-2 flex items-center justify-center gap-4 text-sm">
                 <div className="flex items-center gap-2 text-green-600">
                   <Zap className="w-4 h-4" />
-                  <span>Quick Check ($0.05)</span>
+                  <span>Enhanced Analysis ($0.05)</span>
                 </div>
                 <div className="flex items-center gap-2 text-blue-600">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Professional Investigation (+$0.22)</span>
+                  <Search className="w-4 h-4" />
+                  <span>Business Verification (+$0.22)</span>
                 </div>
               </div>
             </div>
@@ -567,7 +572,7 @@ ANALYSIS DETAILS:
                   <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-600 via-green-600 via-emerald-600 to-green-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
                   <div className="relative z-10 flex items-center gap-2">
                     <Zap className="w-5 h-5" />
-                    Start Security Analysis ($0.05)
+                    Start Enhanced Security Analysis ($0.05)
                   </div>
                 </button>
               )}
@@ -589,25 +594,25 @@ ANALYSIS DETAILS:
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white relative z-10"></div>
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">Running Quick Security Check</h2>
-                  <p className="text-gray-600">Analyzing patterns and identifying red flags...</p>
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">Running Enhanced Security Analysis</h2>
+                  <p className="text-gray-600">Analyzing patterns and preparing investigation targets...</p>
                   <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-sm text-green-700">⚡ Fast analysis in progress • Cost: $0.05 • ~8 seconds</p>
+                    <p className="text-sm text-green-700">⚡ Comprehensive analysis in progress • Cost: $0.05 • ~10 seconds</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Basic Results */}
+            {/* Enhanced Basic Results */}
             {basicAnalysis && (
               <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                       <Zap className="w-6 h-6 text-green-600" />
-                      Quick Security Analysis
+                      Enhanced Security Analysis
                     </h2>
-                    <p className="text-sm text-gray-600">Cost: $0.05 • Analysis Time: ~8 seconds</p>
+                    <p className="text-sm text-gray-600">Cost: $0.05 • Analysis Time: ~10 seconds</p>
                   </div>
                   <button onClick={generateReport} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2">
                     📄 Generate Report
@@ -647,26 +652,71 @@ ANALYSIS DETAILS:
                     <h3 className="font-bold text-indigo-800 mb-2">🏢 Organization Guidance</h3>
                     <p className="text-indigo-700">{basicAnalysis.organizationSpecificGuidance}</p>
                   </div>
+
+                  {/* Investigation Targets Preview */}
+                  {basicAnalysis.investigationTargets && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-bold text-gray-800 mb-3">🎯 Investigation Targets Identified</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {basicAnalysis.investigationTargets.businessesToVerify?.length > 0 && (
+                          <div>
+                            <span className="font-medium text-gray-700">Businesses:</span>
+                            <div className="text-gray-600 mt-1">
+                              {basicAnalysis.investigationTargets.businessesToVerify.map((business, index) => (
+                                <div key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs inline-block mr-1 mb-1">
+                                  {business}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {basicAnalysis.investigationTargets.contactsToCheck?.length > 0 && (
+                          <div>
+                            <span className="font-medium text-gray-700">Contacts:</span>
+                            <div className="text-gray-600 mt-1">
+                              {basicAnalysis.investigationTargets.contactsToCheck.map((contact, index) => (
+                                <div key={index} className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs inline-block mr-1 mb-1">
+                                  {contact}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {basicAnalysis.investigationTargets.suspiciousPatterns?.length > 0 && (
+                          <div className="md:col-span-2">
+                            <span className="font-medium text-gray-700">Patterns to Research:</span>
+                            <div className="text-gray-600 mt-1">
+                              {basicAnalysis.investigationTargets.suspiciousPatterns.map((pattern, index) => (
+                                <div key={index} className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs inline-block mr-1 mb-1">
+                                  {pattern}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Upgrade Option */}
+                {/* Enhanced Upgrade Option */}
                 {showUpgradeOption && !isAnalyzing && (
                   <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
                     <div className="text-center">
-                      <TrendingUp className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">Need Professional Investigation?</h3>
-                      <p className="text-gray-600 mb-4">Get detailed business verification and real-time threat intelligence</p>
+                      <Search className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">Verify This Business?</h3>
+                      <p className="text-gray-600 mb-4">Check if companies and contacts are legitimate with real-time verification</p>
                       <div className="flex justify-center gap-4">
                         <button onClick={upgradeToAdvanced} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:opacity-90 font-medium flex items-center gap-2">
                           <Search className="w-5 h-5" />
-                          Run Professional Investigation (+$0.22)
+                          Verify Business & Contacts (+$0.22)
                         </button>
                         <button onClick={() => setShowUpgradeOption(false)} className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
                           No Thanks
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Includes: Official contact verification • Current scam reports • Threat intelligence
+                        Verify: Official company contacts • Recent scam reports • Business legitimacy
                       </p>
                     </div>
                   </div>
@@ -684,22 +734,22 @@ ANALYSIS DETAILS:
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white relative z-10"></div>
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">Running Professional Investigation</h2>
-                  <p className="text-gray-600">Conducting business verification and threat intelligence research...</p>
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">Verifying Business & Contacts</h2>
+                  <p className="text-gray-600">Conducting targeted verification research...</p>
                   <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm text-blue-700">🔍 Deep analysis in progress • Additional cost: $0.22 • ~25 seconds</p>
+                    <p className="text-sm text-blue-700">🔍 Targeted verification in progress • Additional cost: $0.22 • ~20 seconds</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Advanced Results - FIXED VERSION */}
+            {/* Advanced Results */}
             {advancedAnalysis && (
               <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-2">
                     <Search className="w-6 h-6 text-blue-600" />
-                    Professional Investigation Results
+                    Business Verification Results
                   </h2>
                   <p className="text-sm text-gray-600">Additional Cost: $0.22 • Total: $0.27</p>
                 </div>
@@ -843,7 +893,7 @@ ANALYSIS DETAILS:
                     <span className="ml-2 text-green-600 font-bold">${totalCost.toFixed(2)}</span>
                   </div>
                   <div className="text-xs text-gray-500">
-                    {advancedAnalysis ? 'Professional Investigation' : 'Quick Security Check'}
+                    {advancedAnalysis ? 'Enhanced + Business Verification' : 'Enhanced Security Analysis'}
                   </div>
                 </div>
               </div>
