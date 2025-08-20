@@ -1,87 +1,480 @@
-// pages/api/analyze.js - Complete API with Corrected Perplexity Sonar Reasoning Pro
+// pages/api/analyze.js - Universal Context-Aware Threat Analysis System
 
-// Perplexity Research Function - Uses Sonar Reasoning Pro for business verification
-const callPerplexityResearch = async (investigationTargets) => {
+// Stage 1: Universal Threat Intelligence Analysis
+const analyzeCommunication = async (incident) => {
   try {
-    // Build focused research query from investigation targets
-    const businesses = investigationTargets.businessesToVerify?.join(', ') || '';
-    const contacts = investigationTargets.contactsToCheck?.join(', ') || '';
-    const patterns = investigationTargets.suspiciousPatterns?.join(', ') || '';
-    
-    // Skip if no targets to research
-    if (!businesses && !contacts && !patterns) {
-      console.log('[PERPLEXITY] No investigation targets provided, skipping research');
-      return null;
-    }
-    
-const researchQuery = `Conduct targeted cybersecurity research with specific searches:
+    const intelligencePrompt = `You are a threat intelligence analyst. Analyze this communication to understand the threat landscape and guide targeted research.
 
-PRIORITY SEARCHES (execute each specifically):
-1. "${businesses} fraud alert 2025" - Find company's official scam warnings from their website
-2. "BBB Scam Tracker ${businesses}" - Search BBB database for recent reports
-3. "${contacts} scam report" - Check if these specific contacts are reported as fraudulent
-4. "${patterns} scam 2025" - Find current trend analysis and official warnings
+COMMUNICATION TO ANALYZE:
+${incident}
 
-BUSINESS VERIFICATION FOR: ${businesses}
-- Official website and verified contact information
-- Recent fraud alerts posted by the company itself
-- BBB profile and any scam reports
-- Government or security vendor advisories
+Perform comprehensive threat analysis and entity extraction:
 
-CONTACT VERIFICATION FOR: ${contacts}
-- Cross-reference with official company contacts
-- Search scam databases and reporting sites
-- Check for previous fraud reports involving these numbers/emails
+1. THREAT CLASSIFICATION
+- Identify the primary threat type (employment_scam, romance_scam, tech_support_scam, bec_attack, phishing_credential, investment_fraud, government_impersonation, package_delivery_scam, cryptocurrency_scam, banking_fraud, etc.)
+- Assess threat sophistication level (low, medium, high)
+- Identify social engineering tactics used
 
-THREAT INTELLIGENCE FOR: ${patterns}
-- Current 2025 security advisories about these attack methods
-- Recent campaign reports from security vendors
-- Government warnings (FTC, FBI, CISA) about similar patterns
+2. ENTITY EXTRACTION
+- Organizations: Any companies, agencies, services mentioned
+- People: Names, roles, claimed relationships
+- Financial: Amounts, payment methods, account details, cryptocurrency
+- Technical: URLs, domains, email addresses, phone numbers, apps
+- Temporal: Deadlines, urgency indicators, time pressures
+- Emotional: Fear tactics, excitement, urgency, trust building
 
-IMPORTANT: Provide exact dates, specific citations, and direct quotes. Focus on findings from 2024-2025 for current relevance.`;
-    console.log('[PERPLEXITY] Making research request for targets:', { businesses, contacts, patterns });
-    
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
+3. THREAT VECTORS
+- Social engineering tactics (urgency, authority, scarcity, reciprocity, etc.)
+- Technical methods (spoofing, typosquatting, credential harvesting)
+- Financial methods (wire transfers, gift cards, cryptocurrency, etc.)
+
+4. RESEARCH PRIORITIES
+- What entities need verification most urgently?
+- What official sources should be consulted?
+- What scam databases should be searched?
+- What government agencies might have relevant warnings?
+
+Return ONLY this JSON structure:
+{
+  "threatType": "primary_threat_category",
+  "threatSophistication": "low|medium|high",
+  "socialEngineeringTactics": ["tactic1", "tactic2"],
+  "entities": {
+    "organizations": ["org1", "org2"],
+    "people": ["person1", "person2"],
+    "financial": ["amount1", "method1"],
+    "technical": ["url1", "email1", "phone1"],
+    "temporal": ["deadline1", "urgency1"],
+    "emotional": ["fear_tactic1", "trust_building1"]
+  },
+  "researchPriorities": {
+    "highPriority": ["most_critical_verification_needs"],
+    "mediumPriority": ["secondary_verification_needs"],
+    "lowPriority": ["tertiary_verification_needs"]
+  },
+  "recommendedSources": {
+    "officialSources": ["company_websites", "government_agencies"],
+    "scamDatabases": ["bbb_scam_tracker", "ftc_database"],
+    "technicalAnalysis": ["domain_analysis", "phone_verification"]
+  }
+}`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: 'sonar-reasoning-pro', // ✅ Correct model name for Sonar Reasoning Pro
-        messages: [{ 
-          role: 'user', 
-          content: researchQuery 
-        }],
-        max_tokens: 3000, // ✅ Increased tokens as recommended by Perplexity
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 800,
         temperature: 0.1,
-        return_citations: true // ✅ Confirmed correct parameter for citations
+        messages: [{ role: "user", content: intelligencePrompt }]
       })
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.log('[PERPLEXITY] Error response:', response.status, errorText);
-      throw new Error(`Perplexity API responded with status: ${response.status}`);
+      throw new Error(`Threat analysis failed: ${response.status}`);
     }
 
     const data = await response.json();
-console.log('[PERPLEXITY] Research completed successfully');
-console.log('[PERPLEXITY] Usage:', data.usage);
-
-// Check for low context and log warning
-if (data.usage && data.usage.search_context_size === 'low') {
-  console.log('[PERPLEXITY] Warning: Low search context - research may be incomplete');
-}
-
-console.log('[PERPLEXITY] Research preview:', data.choices[0].message.content.substring(0, 200));
-
-return data.choices[0].message.content;
+    const responseText = data.content[0].text;
     
-    return data.choices[0].message.content;
+    // Clean and parse JSON
+    let cleanedResponse = responseText.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/```json\n?/, '').replace(/\n?```$/, '');
+    }
+    
+    return JSON.parse(cleanedResponse);
     
   } catch (error) {
-    console.error('[PERPLEXITY] Research error:', error);
+    console.error('[THREAT-ANALYSIS] Error:', error);
+    return null;
+  }
+};
+
+// Stage 2: Dynamic Multi-Source Research Based on Threat Intelligence
+const conductTargetedResearch = async (threatIntel) => {
+  try {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      console.log('[RESEARCH] Perplexity API key not configured');
+      return null;
+    }
+
+    const entities = threatIntel.entities || {};
+    const threatType = threatIntel.threatType || 'unknown';
+    
+    // Build dynamic research strategy based on threat type and entities
+    const researchQueries = buildUniversalResearchQueries(threatType, entities);
+    
+    console.log('[RESEARCH] Conducting targeted research for threat type:', threatType);
+    
+    // Execute research in parallel for efficiency
+    const researchPromises = researchQueries.map(async (query, index) => {
+      console.log(`[RESEARCH] Query ${index + 1}:`, query.description);
+      
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'sonar-reasoning-pro',
+          messages: [{ role: 'user', content: query.prompt }],
+          max_tokens: 1500,
+          temperature: 0.1,
+          return_citations: true
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          category: query.category,
+          description: query.description,
+          results: data.choices[0].message.content,
+          usage: data.usage
+        };
+      } else {
+        console.error(`[RESEARCH] Query ${index + 1} failed:`, response.status);
+        return {
+          category: query.category,
+          description: query.description,
+          results: null,
+          error: `Research failed with status ${response.status}`
+        };
+      }
+    });
+
+    const researchResults = await Promise.all(researchPromises);
+    
+    // Combine all research results
+    const combinedResults = {
+      threatType: threatType,
+      totalQueries: researchQueries.length,
+      results: researchResults,
+      combinedFindings: researchResults.map(r => `
+=== ${r.category.toUpperCase()}: ${r.description} ===
+${r.results || r.error || 'No results'}
+`).join('\n')
+    };
+
+    console.log('[RESEARCH] Research completed - Total queries:', researchQueries.length);
+    return combinedResults;
+    
+  } catch (error) {
+    console.error('[RESEARCH] Research error:', error);
+    return null;
+  }
+};
+
+// Universal Research Query Builder - Works for Any Threat Type
+const buildUniversalResearchQueries = (threatType, entities) => {
+  const queries = [];
+  
+  // 1. ORGANIZATION VERIFICATION (Universal)
+  if (entities.organizations && entities.organizations.length > 0) {
+    entities.organizations.forEach(org => {
+      queries.push({
+        category: 'organization_verification',
+        description: `Official verification for ${org}`,
+        prompt: `Find official information for organization: "${org}"
+
+RESEARCH TASKS:
+1. Official website and verified contact information
+2. Legitimate business registration and licensing
+3. Official social media accounts and verification badges
+4. Any fraud alerts or scam warnings posted by the organization
+5. Official recruitment/customer service processes
+6. Comparison with suspicious contacts to identify mismatches
+
+Focus on: Official websites, government business registries, verified social media, company fraud alert pages.
+Provide: Exact URLs, phone numbers, email domains, and any official warnings with dates.`
+      });
+    });
+  }
+
+  // 2. CONTACT AND TECHNICAL VERIFICATION (Universal)
+  const allContacts = [
+    ...(entities.technical || []),
+    ...(entities.financial || []).filter(item => item.includes('@') || item.includes('http') || /[\+\d\-\(\)\s]{10,}/.test(item))
+  ];
+  
+  if (allContacts.length > 0) {
+    queries.push({
+      category: 'contact_verification',
+      description: 'Suspicious contact analysis',
+      prompt: `Analyze these suspicious contacts for fraud indicators:
+
+CONTACTS TO ANALYZE: ${allContacts.join(', ')}
+
+ANALYSIS TASKS:
+1. Domain analysis (official vs. typosquatting, high-risk TLDs like .work, .tk, .info)
+2. Phone number verification (official company numbers vs. suspicious numbers)
+3. Email domain verification (official company domains vs. lookalike domains)
+4. Scam database searches (BBB Scam Tracker, scammer.info, FTC database)
+5. Technical analysis (SSL certificates, domain age, registration details)
+
+Focus on: Scam reporting sites, domain analysis tools, official company contact verification.
+Provide: Risk assessment for each contact with specific technical details.`
+    });
+  }
+
+  // 3. THREAT-SPECIFIC INTELLIGENCE (Dynamic based on threat type)
+  const threatSpecificQueries = getThreatSpecificQueries(threatType, entities);
+  queries.push(...threatSpecificQueries);
+
+  // 4. GOVERNMENT AND OFFICIAL WARNINGS (Universal but Threat-Adapted)
+  queries.push({
+    category: 'official_warnings',
+    description: 'Current government and security warnings',
+    prompt: `Find current official warnings and statistics for threat type: "${threatType}"
+
+RESEARCH TASKS:
+1. FTC fraud alerts and statistics for 2024-2025
+2. FBI IC3 warnings and complaint data
+3. CISA cybersecurity advisories
+4. State attorney general fraud alerts
+5. Better Business Bureau scam patterns
+6. Security vendor threat reports and advisories
+
+Focus on: Government websites (.gov), official security advisories, current fraud statistics.
+Provide: Specific warnings, current threat trends, official reporting mechanisms with contact details.`
+  });
+
+  return queries;
+};
+
+// Threat-Specific Research Queries
+const getThreatSpecificQueries = (threatType, entities) => {
+  const queries = [];
+  
+  switch (threatType) {
+    case 'employment_scam':
+      queries.push({
+        category: 'employment_specific',
+        description: 'Employment scam intelligence',
+        prompt: `Research employment and recruitment scam patterns:
+
+1. Current employment scam statistics and trends for 2025
+2. Fake job posting and recruitment fraud patterns
+3. Work-from-home scam techniques and warnings
+4. Official guidance on verifying job opportunities
+5. Common employment scam red flags and indicators
+
+Focus on: Department of Labor warnings, FTC employment fraud alerts, legitimate recruitment practices.`
+      });
+      break;
+      
+    case 'romance_scam':
+      queries.push({
+        category: 'romance_specific',
+        description: 'Romance scam intelligence',
+        prompt: `Research romance and dating scam patterns:
+
+1. Current romance scam statistics and financial losses for 2024-2025
+2. Online dating fraud techniques and warning signs
+3. Military/overseas romance scam patterns
+4. Cryptocurrency and gift card payment scam methods
+5. Official guidance from dating platforms and law enforcement
+
+Focus on: FTC romance scam alerts, dating platform fraud policies, military impersonation warnings.`
+      });
+      break;
+      
+    case 'tech_support_scam':
+      queries.push({
+        category: 'tech_support_specific',
+        description: 'Tech support scam intelligence',
+        prompt: `Research tech support and computer repair scam patterns:
+
+1. Current tech support scam techniques and warnings
+2. Software company impersonation tactics
+3. Remote access scam methods and prevention
+4. Pop-up and phone-based tech support fraud
+5. Official guidance from major tech companies
+
+Focus on: Microsoft/Apple/Google scam warnings, FTC tech support fraud alerts, cybersecurity advisories.`
+      });
+      break;
+      
+    case 'bec_attack':
+      queries.push({
+        category: 'bec_specific',
+        description: 'Business Email Compromise intelligence',
+        prompt: `Research Business Email Compromise and vendor fraud patterns:
+
+1. Current BEC attack statistics and financial losses
+2. Vendor payment redirection scam techniques
+3. CEO fraud and executive impersonation methods
+4. Wire transfer and payment fraud indicators
+5. Business fraud prevention guidelines
+
+Focus on: FBI IC3 BEC alerts, financial industry fraud warnings, business security best practices.`
+      });
+      break;
+      
+    case 'investment_fraud':
+      queries.push({
+        category: 'investment_specific',
+        description: 'Investment and financial fraud intelligence',
+        prompt: `Research investment fraud and financial scam patterns:
+
+1. Current investment scam statistics and SEC warnings
+2. Cryptocurrency and trading platform fraud
+3. Ponzi scheme and pyramid scam indicators
+4. High-yield investment program (HYIP) scams
+5. Official guidance from financial regulators
+
+Focus on: SEC investor alerts, FINRA fraud warnings, cryptocurrency scam databases.`
+      });
+      break;
+      
+    default:
+      // Generic threat research for unknown patterns
+      queries.push({
+        category: 'generic_threat',
+        description: 'General fraud pattern analysis',
+        prompt: `Research general fraud patterns and social engineering techniques:
+
+1. Current social engineering and fraud statistics
+2. Common scam techniques and psychological manipulation
+3. Identity theft and personal information harvesting
+4. Phishing and credential theft methods
+5. General fraud prevention guidance
+
+Focus on: FTC general fraud alerts, CISA social engineering warnings, identity theft resources.`
+      });
+  }
+  
+  return queries;
+};
+
+// Stage 3: Universal Analysis and Classification
+const formatUniversalAnalysis = async (incident, threatIntel, researchResults) => {
+  try {
+    const formatPrompt = `You are an expert cybersecurity analyst. Create a comprehensive analysis report based on threat intelligence and research findings.
+
+ORIGINAL COMMUNICATION:
+${incident}
+
+THREAT INTELLIGENCE:
+${JSON.stringify(threatIntel, null, 2)}
+
+RESEARCH FINDINGS:
+${researchResults?.combinedFindings || 'Research data unavailable'}
+
+Create a comprehensive analysis that works for any type of threat. Extract specific, actionable information from the research findings.
+
+Return ONLY this JSON structure:
+{
+  "scamClassification": {
+    "primaryType": "Specific scam type (e.g., Employment Impersonation Scam, Romance Scam, etc.)",
+    "subType": "Specific technique or variant",
+    "sophisticationLevel": "low|medium|high",
+    "confidence": "low|medium|high"
+  },
+  "entityVerification": {
+    "organizations": [
+      {
+        "claimed": "Organization as presented in communication",
+        "official": "Verified official information",
+        "status": "legitimate|impersonated|fake|unknown",
+        "officialContacts": ["verified contact methods"],
+        "fraudAlerts": ["any official warnings with dates"]
+      }
+    ],
+    "contacts": [
+      {
+        "contact": "suspicious contact",
+        "type": "email|phone|url|domain",
+        "riskLevel": "HIGH|MEDIUM|LOW",
+        "analysis": "Specific reason for risk assessment",
+        "isLegitimate": false,
+        "officialAlternative": "verified alternative if available"
+      }
+    ]
+  },
+  "threatAnalysis": {
+    "socialEngineeringTactics": ["specific tactics identified"],
+    "technicalMethods": ["technical attack methods"],
+    "targetedInformation": ["what information/access being sought"],
+    "urgencyIndicators": ["time pressure tactics used"],
+    "credibilityTactics": ["methods used to appear legitimate"]
+  },
+  "verificationGuidance": {
+    "immediateActions": ["specific steps to take right now"],
+    "verificationSteps": ["how to verify legitimacy through official channels"],
+    "redFlags": ["specific warning signs in this communication"],
+    "officialChannels": ["how to contact organizations through verified methods"]
+  },
+  "threatIntelligence": {
+    "similarIncidents": ["known similar cases with details"],
+    "currentTrends": ["relevant current fraud trends"],
+    "officialWarnings": ["government/agency warnings with sources"],
+    "reportingMechanisms": ["where and how to report this incident"]
+  },
+  "riskAssessment": {
+    "overallRisk": "CRITICAL|HIGH|MEDIUM|LOW",
+    "identityTheftRisk": "HIGH|MEDIUM|LOW",
+    "financialRisk": "HIGH|MEDIUM|LOW",
+    "dataCompromiseRisk": "HIGH|MEDIUM|LOW",
+    "recommendedResponse": "ignore|verify_carefully|report_immediately"
+  },
+  "actionableRecommendations": {
+    "doNotDo": ["specific things to avoid"],
+    "doImmediately": ["urgent actions to take"],
+    "verifyBefore": ["things to verify before any action"],
+    "reportTo": ["specific agencies/organizations to contact with full details"]
+  }
+}
+
+CRITICAL REQUIREMENTS:
+1. Base all findings on the research results - cite specific sources where available
+2. Provide specific, actionable guidance rather than generic advice
+3. Include exact contact information for reporting and verification
+4. Distinguish between legitimate organizations being impersonated vs. completely fake entities
+5. Assess risk levels based on actual threat indicators found in research
+6. Include current statistics and trends from the research findings`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 1500,
+        temperature: 0.1,
+        messages: [{ role: "user", content: formatPrompt }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Analysis formatting failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    let responseText = data.content[0].text;
+    
+    // Clean and parse JSON
+    let cleanedResponse = responseText.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/```json\n?/, '').replace(/\n?```$/, '');
+    }
+    
+    const analysis = JSON.parse(cleanedResponse);
+    analysis.analysisType = "advanced";
+    
+    return analysis;
+    
+  } catch (error) {
+    console.error('[ANALYSIS] Formatting error:', error);
     return null;
   }
 };
@@ -116,27 +509,22 @@ export default async function handler(req, res) {
     let maxTokens;
     
     if (analysisType === 'highlight') {
-      // AI HIGHLIGHTING - Haiku 3.5 for speed and cost efficiency
+      // AI HIGHLIGHTING - Universal pattern detection
       model = "claude-3-5-haiku-20241022";
       maxTokens = 500;
       
-      fullPrompt = `Analyze this text for security threats and identify only the MOST IMPORTANT spans to highlight.
+      fullPrompt = `Analyze this text for security threats and highlight the most critical elements regardless of threat type.
 
 Text: "${incident}"
 
-Rules:
-- Only highlight 3-5 CRITICAL items maximum
-- Focus on the most dangerous elements only
-- Prioritize: financial amounts, phone numbers, messaging apps, suspicious contact methods
-- DO NOT highlight common words or entire sentences
-- Keep highlights SHORT and SPECIFIC
-
-Categorize by threat level:
-- high_risk: Phone numbers, financial amounts ($250, $2250), crypto/wire transfers
-- suspicious: WhatsApp, Telegram, messaging app names only
-- organization: Company names only (like "Bind Media")
-
-IMPORTANT: Return maximum 5 highlights total. Focus on quality over quantity.
+Universal highlighting rules:
+- Highlight 3-5 CRITICAL security indicators maximum
+- Focus on: financial amounts, contact methods, URLs, urgency language, suspicious claims
+- Categorize by universal risk levels:
+  * high_risk: Financial amounts, phone numbers, suspicious URLs, cryptocurrency
+  * medium_risk: Urgency words, verification requests, app downloads
+  * suspicious: Messaging apps, unsolicited offers, personal information requests
+  * organization: Any company/organization names mentioned
 
 Return ONLY this JSON format:
 {
@@ -146,119 +534,83 @@ Return ONLY this JSON format:
 }`;
 
     } else if (analysisType === 'basic') {
-      // ENHANCED BASIC ANALYSIS - Haiku 3.5 with comprehensive analysis and investigation targets
+      // ENHANCED BASIC ANALYSIS - Universal threat detection
       model = "claude-3-5-haiku-20241022";
       maxTokens = 700;
       
-      fullPrompt = `You are a cybersecurity expert providing comprehensive security education analysis.
+      fullPrompt = `You are a cybersecurity expert providing universal threat analysis for any type of communication.
 
 Communication: ${incident}
 
-Provide thorough educational analysis and extract specific items for potential verification. Even if the communication seems legitimate, include educational patterns users should recognize in similar situations.
+Analyze this communication for any type of threat (employment scam, romance scam, tech support scam, phishing, BEC, investment fraud, etc.). Extract universal threat indicators and entities.
 
 Respond with ONLY this JSON (no other text):
 {
   "whatWeObserved": "Detailed factual description of communication elements - who, what, when, how delivered, key claims made",
-  "redFlagsToConsider": ["Educational pattern 1 (specific to this case)", "Educational pattern 2 (specific to this case)", "Educational pattern 3 (specific to this case)", "Educational pattern 4 (general security awareness)"],
-  "verificationSteps": ["Specific verification step 1", "Specific verification step 2", "Specific verification step 3"],
-  "whyVerificationMatters": "Educational explanation of why independent verification is crucial for this type of communication",
-  "organizationSpecificGuidance": "Detailed guidance about the claimed organization and how to verify legitimately",
+  "redFlagsToConsider": ["Universal security pattern 1", "Universal security pattern 2", "Universal security pattern 3", "Universal security pattern 4"],
+  "verificationSteps": ["Universal verification step 1", "Universal verification step 2", "Universal verification step 3"],
+  "whyVerificationMatters": "Universal explanation of why independent verification is crucial for any suspicious communication",
+  "organizationSpecificGuidance": "Guidance about verifying any claimed organization or entity through official channels",
   "investigationTargets": {
-    "businessesToVerify": ["Extract any company/organization names mentioned in the communication"],
-    "contactsToCheck": ["Extract phone numbers, email addresses, domains, or websites mentioned"],
-    "suspiciousPatterns": ["Identify specific suspicious patterns like 'WhatsApp job recruitment', 'vendor payment changes', 'urgent account verification'"],
-    "searchQueries": ["Specific web search to verify company official contacts", "Search for recent scam reports about this pattern", "Look up official company fraud warnings"]
+    "businessesToVerify": ["Extract any organizations, companies, agencies, services mentioned"],
+    "contactsToCheck": ["Extract all contact methods: phone numbers, email addresses, URLs, messaging apps"],
+    "suspiciousPatterns": ["Identify universal threat patterns: urgency tactics, financial requests, credential harvesting, impersonation"],
+    "searchQueries": ["Universal verification searches", "Threat-specific database searches", "Official warning lookups"]
   },
   "analysisType": "basic",
   "upgradeAvailable": true
 }`;
 
     } else if (analysisType === 'advanced') {
-      // ADVANCED ANALYSIS WITH PERPLEXITY SONAR REASONING PRO
-      console.log('[API] Starting advanced analysis with Perplexity Sonar Reasoning Pro...');
+      // UNIVERSAL ADVANCED ANALYSIS PIPELINE
+      console.log('[API] Starting universal threat analysis pipeline...');
       
-      if (!process.env.PERPLEXITY_API_KEY) {
-        console.log('[API] Warning: Perplexity API key not configured, using fallback');
+      // Stage 1: Threat Intelligence Analysis
+      console.log('[API] Stage 1: Analyzing threat landscape...');
+      const threatIntel = await analyzeCommunication(incident);
+      
+      if (!threatIntel) {
+        console.log('[API] Threat analysis failed, using fallback');
+        return res.status(200).json({
+          scamClassification: { primaryType: "Analysis Error - Manual Review Required" },
+          analysisType: "advanced",
+          error: "Threat intelligence analysis failed"
+        });
       }
       
-      const targets = basicResults?.investigationTargets || {};
-      console.log('[API] Investigation targets:', targets);
+      console.log('[API] Threat intelligence completed:', threatIntel.threatType);
       
-      // Step 1: Get research from Perplexity Sonar Reasoning Pro
-      let researchResults = null;
-      if (process.env.PERPLEXITY_API_KEY) {
-        researchResults = await callPerplexityResearch(targets);
+      // Stage 2: Dynamic Research Based on Threat Type
+      console.log('[API] Stage 2: Conducting targeted research...');
+      const researchResults = await conductTargetedResearch(threatIntel);
+      
+      // Stage 3: Universal Analysis and Formatting
+      console.log('[API] Stage 3: Formatting comprehensive analysis...');
+      const analysis = await formatUniversalAnalysis(incident, threatIntel, researchResults);
+      
+      if (!analysis) {
+        console.log('[API] Analysis formatting failed, using enhanced fallback');
+        return res.status(200).json({
+          scamClassification: {
+            primaryType: threatIntel.threatType || "Unknown Threat",
+            subType: "Analysis formatting failed",
+            sophisticationLevel: "unknown",
+            confidence: "low"
+          },
+          riskAssessment: {
+            overallRisk: "HIGH",
+            recommendedResponse: "verify_carefully"
+          },
+          analysisType: "advanced",
+          error: "Analysis formatting failed but threat intelligence available"
+        });
       }
       
-      if (!researchResults) {
-        // Fallback if Perplexity fails or is unavailable
-        console.log('[API] Perplexity research failed or unavailable, using enhanced fallback');
-        
-        // Create enhanced fallback based on investigation targets
-        const businessNames = targets.businessesToVerify?.join(', ') || 'the claimed organization';
-        const contactInfo = targets.contactsToCheck?.join(', ') || 'the provided contacts';
-        const patterns = targets.suspiciousPatterns?.join(', ') || 'the communication patterns';
-        
-        const fallbackAnalysis = {
-          businessVerification: {
-            claimedOrganization: businessNames,
-            officialContacts: [`Visit ${businessNames} official website for verified contact information`, "Check company's 'Contact Us' page for official phone and email", "Look for official social media accounts with verification badges"],
-            comparisonFindings: [`Manual comparison needed between ${contactInfo} and official sources`, "Verify domain matches official company website", "Check if contact methods match company's standard communication practices"],
-            officialAlerts: [`Check ${businessNames} official website for fraud alert section`, "Look for scam warnings on company's security or news pages", "Search for company statements about fraudulent communications"]
-          },
-          threatIntelligence: {
-            knownScamReports: [`Search BBB scam tracker for reports involving ${contactInfo}`, "Check FBI IC3 database for similar fraud reports", "Look up reports on scammer.info and similar databases"],
-            similarIncidents: [`Search for similar ${patterns} in recent security advisories`, "Check recent fraud alerts from FTC and CISA", "Look for pattern matches in cybersecurity vendor reports"],
-            securityAdvisories: ["Review CISA.gov for related security advisories", "Check FBI IC3 public service announcements", "Monitor FTC fraud alerts for similar schemes"]
-          },
-          currentThreatLandscape: {
-            industryTrends: [`Research current trends related to ${patterns}`, "Check cybersecurity vendor threat reports for similar patterns", "Review government fraud statistics for related schemes"],
-            recentCampaigns: ["Monitor security blogs for recent campaign reports", "Check threat intelligence feeds for similar attack patterns", "Review recent fraud warnings from financial institutions"],
-            officialWarnings: ["Check government consumer protection sites for relevant warnings", "Review law enforcement fraud alerts", "Monitor industry-specific security advisories"]
-          },
-          analysisType: "advanced"
-        };
-        return res.status(200).json(fallbackAnalysis);
-      }
-      
-      // Step 2: Use Haiku to format Perplexity results into our JSON structure
-      model = "claude-3-5-haiku-20241022";
-      maxTokens = 800;
-      
-      fullPrompt = `Format the following research results into our JSON structure.
-
-RESEARCH RESULTS FROM PERPLEXITY SONAR REASONING PRO:
-${researchResults}
-
-INVESTIGATION TARGETS:
-- Businesses: ${targets.businessesToVerify?.join(', ') || 'None'}
-- Contacts: ${targets.contactsToCheck?.join(', ') || 'None'}
-- Patterns: ${targets.suspiciousPatterns?.join(', ') || 'None'}
-
-Convert this research into ONLY this JSON format (no other text):
-{
-  "businessVerification": {
-    "claimedOrganization": "Main organization from research",
-    "officialContacts": ["Official contacts found in research with sources"],
-    "comparisonFindings": ["How provided contacts compare to official ones found"],
-    "officialAlerts": ["Any fraud warnings or alerts found in research"]
-  },
-  "threatIntelligence": {
-    "knownScamReports": ["Specific scam reports found about these contacts/patterns"],
-    "similarIncidents": ["Similar incidents found in research"],
-    "securityAdvisories": ["Security advisories found in research"]
-  },
-  "currentThreatLandscape": {
-    "industryTrends": ["Current trends found in research"],
-    "recentCampaigns": ["Recent campaigns found in research"],
-    "officialWarnings": ["Government/official warnings found in research"]
-  },
-  "analysisType": "advanced"
-}
-
-Extract findings from the research and organize them into these categories. If no information was found for a category, include explanatory text about what to check manually. Include relevant citations when possible.`;
+      console.log('[API] Universal analysis completed successfully');
+      return res.status(200).json(analysis);
     }
 
+    // Handle basic and highlight analysis types
     console.log('[API] Making request - Model:', model, 'Tokens:', maxTokens);
     
     const anthropicPayload = {
@@ -342,60 +694,35 @@ Extract findings from the research and organize them into these categories. If n
       console.log('[API] JSON parsing failed:', parseError);
       console.log('[API] Full response that failed to parse:', responseText);
       
-      // Enhanced fallback based on analysis type
+      // Universal fallback based on analysis type
       if (analysisType === 'highlight') {
         analysis = {
           highlights: []
         };
       } else if (analysisType === 'basic') {
-        const hasWhatsApp = incident.toLowerCase().includes('whatsapp');
-        const hasJobOffer = incident.toLowerCase().includes('job') || incident.toLowerCase().includes('work');
-        const hasFinancialAmount = /\$\d+/.test(incident);
-        const hasPhoneNumber = /\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/.test(incident);
-        
         analysis = {
-          whatWeObserved: "Communication contains elements that require further verification based on observed patterns",
+          whatWeObserved: "Communication contains elements that require verification through official channels",
           redFlagsToConsider: [
-            hasWhatsApp ? "Communication via WhatsApp instead of official channels" : "Verify sender through official channels",
-            hasJobOffer ? "Unsolicited job offer requiring verification" : "Unexpected communication pattern",
-            hasFinancialAmount ? "Financial amounts mentioned without clear context" : "Exercise standard verification",
-            hasPhoneNumber ? "Phone contact provided - verify through official sources" : "Confirm contact legitimacy"
+            "Unsolicited communication from unknown sender",
+            "Requests for personal or financial information", 
+            "Urgency or pressure tactics used",
+            "Contact methods outside official channels"
           ],
           verificationSteps: [
-            "Contact organization through official website",
-            "Verify sender through known official channels",
-            "Research organization independently before responding"
+            "Contact the claimed organization through their official website",
+            "Verify any claims independently through trusted sources",
+            "Do not click links or provide information before verification"
           ],
-          whyVerificationMatters: "Independent verification helps confirm legitimacy and protects against social engineering attacks that exploit trust.",
-          organizationSpecificGuidance: "Check the organization's official website for contact verification procedures and fraud warnings.",
+          whyVerificationMatters: "Independent verification protects against social engineering, fraud, and identity theft attempts.",
+          organizationSpecificGuidance: "Always verify communications through official channels before taking any action or providing information.",
           investigationTargets: {
-            businessesToVerify: ["Organization mentioned in communication"],
-            contactsToCheck: ["Phone numbers and email addresses provided"],
-            suspiciousPatterns: ["Communication method and contact patterns"],
-            searchQueries: ["Organization official contact verification", "Recent scam reports with similar patterns"]
+            businessesToVerify: ["Any organization mentioned in the communication"],
+            contactsToCheck: ["All contact methods provided"],
+            suspiciousPatterns: ["Communication method and verification requests"],
+            searchQueries: ["Official organization verification", "Scam reports for similar patterns"]
           },
           analysisType: "basic",
           upgradeAvailable: true
-        };
-      } else if (analysisType === 'advanced') {
-        analysis = {
-          businessVerification: {
-            claimedOrganization: "Analysis requires manual verification due to parsing error",
-            officialContacts: ["Visit organization's official website for verified contact information"],
-            comparisonFindings: ["Manual comparison of provided contacts with official sources needed"],
-            officialAlerts: ["Check organization's official fraud alert page if available"]
-          },
-          threatIntelligence: {
-            knownScamReports: ["Search fraud databases manually for reports involving these contacts"],
-            similarIncidents: ["Research similar communication patterns in security forums"],
-            securityAdvisories: ["Check CISA.gov and FBI IC3 for related advisories"]
-          },
-          currentThreatLandscape: {
-            industryTrends: ["Consult current cybersecurity reports for industry-specific threats"],
-            recentCampaigns: ["Monitor security vendor blogs for recent campaign reports"],
-            officialWarnings: ["Review government security alerts and advisories"]
-          },
-          analysisType: "advanced"
         };
       }
     }
