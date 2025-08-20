@@ -295,24 +295,24 @@ REPORT DETAILS:
 
       {/* STEP 1: Landing Page */}
       {!isAnalysisMode && (
-        <div className="max-w-2xl mx-auto px-6 py-16">
+        <div className="max-w-2xl mx-auto px-6 py-12">
           
                 {/* Hero Section */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
               <Shield className="w-8 h-8 text-blue-600" />
             </div>
             
             <h1 className="text-5xl font-semibold text-gray-900 mb-4">Ask Allerna</h1>
-            <p className="text-xl text-gray-600 mb-12">Security Education Platform</p>
+            <p className="text-xl text-gray-600 mb-8">Security Education Platform</p>
             <p className="text-lg text-gray-600 max-w-lg mx-auto">
               Get detailed analysis and verification guidance for suspicious communications
             </p>
           </div>
 
           {/* Input Section */}
-          <div className="mb-12">
-            <label className="block text-lg font-medium text-gray-900 mb-6">
+          <div className="mb-8">
+            <label className="block text-lg font-medium text-gray-900 mb-4">
               Describe the suspicious communication:
             </label>
             <textarea
