@@ -1,6 +1,6 @@
-// pages/api/analyze.js - Complete API with Perplexity Integration for Business Verification
+// pages/api/analyze.js - Complete API with Corrected Perplexity Sonar Reasoning Pro
 
-// Perplexity Research Function - Used only for advanced analysis
+// Perplexity Research Function - Uses Sonar Reasoning Pro for business verification
 const callPerplexityResearch = async (investigationTargets) => {
   try {
     // Build focused research query from investigation targets
@@ -40,14 +40,14 @@ Provide citations for all findings. Focus on official sources like company websi
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: 'sonar-reasoning-pro', // ✅ Correct model name for Sonar Reasoning Pro
         messages: [{ 
           role: 'user', 
           content: researchQuery 
         }],
-        max_tokens: 1000,
+        max_tokens: 1200, // ✅ Increased tokens as recommended by Perplexity
         temperature: 0.1,
-        return_citations: true
+        return_citations: true // ✅ Confirmed correct parameter for citations
       })
     });
 
@@ -158,8 +158,8 @@ Respond with ONLY this JSON (no other text):
 }`;
 
     } else if (analysisType === 'advanced') {
-      // ADVANCED ANALYSIS WITH PERPLEXITY RESEARCH
-      console.log('[API] Starting advanced analysis with Perplexity research...');
+      // ADVANCED ANALYSIS WITH PERPLEXITY SONAR REASONING PRO
+      console.log('[API] Starting advanced analysis with Perplexity Sonar Reasoning Pro...');
       
       if (!process.env.PERPLEXITY_API_KEY) {
         console.log('[API] Warning: Perplexity API key not configured, using fallback');
@@ -168,7 +168,7 @@ Respond with ONLY this JSON (no other text):
       const targets = basicResults?.investigationTargets || {};
       console.log('[API] Investigation targets:', targets);
       
-      // Step 1: Get research from Perplexity (if API key is available)
+      // Step 1: Get research from Perplexity Sonar Reasoning Pro
       let researchResults = null;
       if (process.env.PERPLEXITY_API_KEY) {
         researchResults = await callPerplexityResearch(targets);
@@ -211,7 +211,7 @@ Respond with ONLY this JSON (no other text):
       
       fullPrompt = `Format the following research results into our JSON structure.
 
-RESEARCH RESULTS FROM PERPLEXITY:
+RESEARCH RESULTS FROM PERPLEXITY SONAR REASONING PRO:
 ${researchResults}
 
 INVESTIGATION TARGETS:
