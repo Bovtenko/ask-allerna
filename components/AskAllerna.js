@@ -297,15 +297,7 @@ REPORT DETAILS:
       {!isAnalysisMode && (
         <div className="max-w-2xl mx-auto px-6 py-16">
           
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-semibold text-gray-900">Ask Allerna</span>
-          </div>
-
-          {/* Hero Section */}
+                {/* Hero Section */}
           <div className="text-center mb-16">
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
               <Shield className="w-8 h-8 text-blue-600" />
