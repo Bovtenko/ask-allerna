@@ -1,4 +1,74 @@
-// pages/api/analyze.js - Enhanced Two-Stage Analysis
+// pages/api/analyze.js - Complete API with Perplexity Integration for Business Verification
+
+// Perplexity Research Function - Used only for advanced analysis
+const callPerplexityResearch = async (investigationTargets) => {
+  try {
+    // Build focused research query from investigation targets
+    const businesses = investigationTargets.businessesToVerify?.join(', ') || '';
+    const contacts = investigationTargets.contactsToCheck?.join(', ') || '';
+    const patterns = investigationTargets.suspiciousPatterns?.join(', ') || '';
+    
+    // Skip if no targets to research
+    if (!businesses && !contacts && !patterns) {
+      console.log('[PERPLEXITY] No investigation targets provided, skipping research');
+      return null;
+    }
+    
+    const researchQuery = `Research for cybersecurity verification:
+
+BUSINESSES TO VERIFY: ${businesses}
+- Find official contact information (phone, email, address)
+- Check BBB ratings and business legitimacy
+- Look for any fraud warnings or alerts about these companies
+
+CONTACTS TO CHECK: ${contacts}
+- Verify if these contacts match official company information
+- Search for scam reports involving these specific contacts
+
+SUSPICIOUS PATTERNS: ${patterns}
+- Find recent security advisories about these attack patterns
+- Look for official warnings from government agencies or security vendors
+
+Provide citations for all findings. Focus on official sources like company websites, BBB, government agencies, and reputable security vendors.`;
+
+    console.log('[PERPLEXITY] Making research request for targets:', { businesses, contacts, patterns });
+    
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [{ 
+          role: 'user', 
+          content: researchQuery 
+        }],
+        max_tokens: 1000,
+        temperature: 0.1,
+        return_citations: true
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('[PERPLEXITY] Error response:', response.status, errorText);
+      throw new Error(`Perplexity API responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[PERPLEXITY] Research completed successfully');
+    console.log('[PERPLEXITY] Usage:', data.usage);
+    console.log('[PERPLEXITY] Research preview:', data.choices[0].message.content.substring(0, 200));
+    
+    return data.choices[0].message.content;
+    
+  } catch (error) {
+    console.error('[PERPLEXITY] Research error:', error);
+    return null;
+  }
+};
 
 export default async function handler(req, res) {
   console.log('[API] Request received:', req.method);
@@ -19,8 +89,8 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      console.log('[API] Error: API key not configured');
-      return res.status(500).json({ error: 'API key not configured' });
+      console.log('[API] Error: Anthropic API key not configured');
+      return res.status(500).json({ error: 'Anthropic API key not configured' });
     }
 
     console.log('[API] Building prompt for analysis type:', analysisType);
@@ -28,7 +98,6 @@ export default async function handler(req, res) {
     let fullPrompt;
     let model;
     let maxTokens;
-    let tools = [];
     
     if (analysisType === 'highlight') {
       // AI HIGHLIGHTING - Haiku 3.5 for speed and cost efficiency
@@ -89,86 +158,93 @@ Respond with ONLY this JSON (no other text):
 }`;
 
     } else if (analysisType === 'advanced') {
-      // FOCUSED PROFESSIONAL ANALYSIS - Sonnet 4 with targeted web search
-      model = "claude-sonnet-4-20250514";
-      maxTokens = 800;
-      tools = [{
-        "type": "web_search_20250305",
-        "name": "web_search"
-      }];
-
+      // ADVANCED ANALYSIS WITH PERPLEXITY RESEARCH
+      console.log('[API] Starting advanced analysis with Perplexity research...');
+      
+      if (!process.env.PERPLEXITY_API_KEY) {
+        console.log('[API] Warning: Perplexity API key not configured, using fallback');
+      }
+      
       const targets = basicResults?.investigationTargets || {};
-      const businessesToVerify = targets.businessesToVerify?.join(', ') || 'None specified';
-      const contactsToCheck = targets.contactsToCheck?.join(', ') || 'None specified';
-      const suspiciousPatterns = targets.suspiciousPatterns?.join(', ') || 'None specified';
-      const searchQueries = targets.searchQueries?.join(', ') || 'None specified';
+      console.log('[API] Investigation targets:', targets);
+      
+      // Step 1: Get research from Perplexity (if API key is available)
+      let researchResults = null;
+      if (process.env.PERPLEXITY_API_KEY) {
+        researchResults = await callPerplexityResearch(targets);
+      }
+      
+      if (!researchResults) {
+        // Fallback if Perplexity fails or is unavailable
+        console.log('[API] Perplexity research failed or unavailable, using enhanced fallback');
+        
+        // Create enhanced fallback based on investigation targets
+        const businessNames = targets.businessesToVerify?.join(', ') || 'the claimed organization';
+        const contactInfo = targets.contactsToCheck?.join(', ') || 'the provided contacts';
+        const patterns = targets.suspiciousPatterns?.join(', ') || 'the communication patterns';
+        
+        const fallbackAnalysis = {
+          businessVerification: {
+            claimedOrganization: businessNames,
+            officialContacts: [`Visit ${businessNames} official website for verified contact information`, "Check company's 'Contact Us' page for official phone and email", "Look for official social media accounts with verification badges"],
+            comparisonFindings: [`Manual comparison needed between ${contactInfo} and official sources`, "Verify domain matches official company website", "Check if contact methods match company's standard communication practices"],
+            officialAlerts: [`Check ${businessNames} official website for fraud alert section`, "Look for scam warnings on company's security or news pages", "Search for company statements about fraudulent communications"]
+          },
+          threatIntelligence: {
+            knownScamReports: [`Search BBB scam tracker for reports involving ${contactInfo}`, "Check FBI IC3 database for similar fraud reports", "Look up reports on scammer.info and similar databases"],
+            similarIncidents: [`Search for similar ${patterns} in recent security advisories`, "Check recent fraud alerts from FTC and CISA", "Look for pattern matches in cybersecurity vendor reports"],
+            securityAdvisories: ["Review CISA.gov for related security advisories", "Check FBI IC3 public service announcements", "Monitor FTC fraud alerts for similar schemes"]
+          },
+          currentThreatLandscape: {
+            industryTrends: [`Research current trends related to ${patterns}`, "Check cybersecurity vendor threat reports for similar patterns", "Review government fraud statistics for related schemes"],
+            recentCampaigns: ["Monitor security blogs for recent campaign reports", "Check threat intelligence feeds for similar attack patterns", "Review recent fraud warnings from financial institutions"],
+            officialWarnings: ["Check government consumer protection sites for relevant warnings", "Review law enforcement fraud alerts", "Monitor industry-specific security advisories"]
+          },
+          analysisType: "advanced"
+        };
+        return res.status(200).json(fallbackAnalysis);
+      }
+      
+      // Step 2: Use Haiku to format Perplexity results into our JSON structure
+      model = "claude-3-5-haiku-20241022";
+      maxTokens = 800;
+      
+      fullPrompt = `Format the following research results into our JSON structure.
 
-      fullPrompt = `Conduct targeted verification research based on preliminary analysis findings.
+RESEARCH RESULTS FROM PERPLEXITY:
+${researchResults}
 
-INVESTIGATION TARGETS FROM BASIC ANALYSIS:
-- Businesses to verify: ${businessesToVerify}
-- Contacts to check: ${contactsToCheck}
-- Suspicious patterns: ${suspiciousPatterns}
-- Specific searches needed: ${searchQueries}
+INVESTIGATION TARGETS:
+- Businesses: ${targets.businessesToVerify?.join(', ') || 'None'}
+- Contacts: ${targets.contactsToCheck?.join(', ') || 'None'}
+- Patterns: ${targets.suspiciousPatterns?.join(', ') || 'None'}
 
-INSTRUCTIONS:
-1. Use web_search to verify ONLY the specific targets identified above
-2. Focus searches on official company information and recent scam reports
-3. Compare claimed contacts with official sources
-4. Look for security advisories related to the identified patterns
-
-Respond with ONLY this JSON structure (no other text):
+Convert this research into ONLY this JSON format (no other text):
 {
   "businessVerification": {
-    "claimedOrganization": "Primary organization mentioned in targets",
-    "officialContacts": ["Verified official contact information found through web search"],
-    "comparisonFindings": ["How the provided contacts compare to verified official contacts"],
-    "officialAlerts": ["Any official fraud warnings or alerts found about this organization"]
+    "claimedOrganization": "Main organization from research",
+    "officialContacts": ["Official contacts found in research with sources"],
+    "comparisonFindings": ["How provided contacts compare to official ones found"],
+    "officialAlerts": ["Any fraud warnings or alerts found in research"]
   },
   "threatIntelligence": {
-    "knownScamReports": ["Specific scam reports found about these contacts, patterns, or organization"],
-    "similarIncidents": ["Similar attack patterns or incidents found through research"],
-    "securityAdvisories": ["Official security warnings or advisories related to the identified patterns"]
+    "knownScamReports": ["Specific scam reports found about these contacts/patterns"],
+    "similarIncidents": ["Similar incidents found in research"],
+    "securityAdvisories": ["Security advisories found in research"]
   },
   "currentThreatLandscape": {
-    "industryTrends": ["Current cybersecurity trends related to the identified patterns"],
-    "recentCampaigns": ["Recent scam campaigns matching the suspicious patterns identified"],
-    "officialWarnings": ["Government, law enforcement, or security vendor warnings"]
+    "industryTrends": ["Current trends found in research"],
+    "recentCampaigns": ["Recent campaigns found in research"],
+    "officialWarnings": ["Government/official warnings found in research"]
   },
   "analysisType": "advanced"
 }
 
-IMPORTANT: Only search for and report findings directly related to the investigation targets. Base all findings on actual web search results.`;
+Extract findings from the research and organize them into these categories. If no information was found for a category, include explanatory text about what to check manually. Include relevant citations when possible.`;
     }
 
     console.log('[API] Making request - Model:', model, 'Tokens:', maxTokens);
     
-    // Enhanced request function with retry logic for overload errors
-    const makeAnthropicRequest = async (payload, retries = 3) => {
-      for (let i = 0; i < retries; i++) {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": process.env.ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (response.status === 529) {
-          const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
-          console.log(`[API] Overloaded, retrying in ${delay}ms (attempt ${i + 1}/${retries})`);
-          if (i < retries - 1) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          }
-        }
-        
-        return response;
-      }
-    };
-
     const anthropicPayload = {
       model: model,
       max_tokens: maxTokens,
@@ -179,48 +255,27 @@ IMPORTANT: Only search for and report findings directly related to the investiga
       }]
     };
 
-    if (tools.length > 0) {
-      anthropicPayload.tools = tools;
-    }
-
-    const response = await makeAnthropicRequest(anthropicPayload);
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify(anthropicPayload)
+    });
 
     console.log('[API] Anthropic response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.log('[API] Anthropic error response:', errorText);
-      
-      // Special handling for overload errors in advanced analysis
-      if (response.status === 529 && analysisType === 'advanced') {
-        console.log('[API] Advanced analysis overloaded, providing fallback');
-        const fallbackAnalysis = {
-          businessVerification: {
-            claimedOrganization: "Analysis unavailable due to high system load",
-            officialContacts: ["Please verify contacts manually through official company website"],
-            comparisonFindings: ["Manual verification required - system currently overloaded"],
-            officialAlerts: ["Check company's official fraud alert page if available"]
-          },
-          threatIntelligence: {
-            knownScamReports: ["Search fraud databases manually for reports involving these contacts"],
-            similarIncidents: ["Check security forums for similar communication patterns"],
-            securityAdvisories: ["Review CISA.gov and FBI IC3 for related advisories"]
-          },
-          currentThreatLandscape: {
-            industryTrends: ["Consult current cybersecurity reports for relevant threats"],
-            recentCampaigns: ["Monitor security vendor blogs for recent campaign reports"],
-            officialWarnings: ["Review government security alerts and advisories"]
-          },
-          analysisType: "advanced"
-        };
-        return res.status(200).json(fallbackAnalysis);
-      }
-      
       throw new Error(`Anthropic API responded with status: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('[API] Response received, parsing...');
+    console.log('[API] Anthropic usage:', data.usage);
     
     if (!data.content || !data.content[0]) {
       throw new Error('Invalid response format from Anthropic API');
