@@ -17,6 +17,14 @@ const AskAllerna = () => {
   const [isHighlighting, setIsHighlighting] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
 
+  // TEMPORARY DEBUG - Remove after testing
+  useEffect(() => {
+    if (advancedAnalysis) {
+      console.log('COMPONENT DEBUG - Advanced Analysis Data:', advancedAnalysis);
+      console.log('COMPONENT DEBUG - Keys:', Object.keys(advancedAnalysis));
+    }
+  }, [advancedAnalysis]);
+
   // AI-powered text highlighting function with scanning animation
   const getAIHighlighting = async (text) => {
     if (!text || text.length < 10) return text;
@@ -206,6 +214,7 @@ const AskAllerna = () => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('[DEBUG] Basic analysis response:', data);
         setBasicAnalysis(data);
         setTotalCost(0.05);
         setShowUpgradeOption(true);
@@ -230,6 +239,7 @@ const AskAllerna = () => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('[DEBUG] Advanced analysis response:', data);
         setAdvancedAnalysis(data);
         setTotalCost(0.27);
         return data;
@@ -291,6 +301,28 @@ const AskAllerna = () => {
     const reportId = `ALR-${Date.now().toString().slice(-8)}`;
     const analysisLevel = advancedAnalysis ? 'Professional Investigation' : 'Quick Security Check';
 
+    let advancedSection = '';
+    if (advancedAnalysis) {
+      advancedSection = `
+=== PROFESSIONAL INVESTIGATION RESULTS ===
+
+BUSINESS VERIFICATION:
+Organization: ${advancedAnalysis.businessVerification?.claimedOrganization || 'Not specified'}
+Official Contacts: ${advancedAnalysis.businessVerification?.officialContacts?.join(', ') || 'None found'}
+Comparison Findings: ${advancedAnalysis.businessVerification?.comparisonFindings?.join(', ') || 'None available'}
+Official Alerts: ${advancedAnalysis.businessVerification?.officialAlerts?.join(', ') || 'None found'}
+
+THREAT INTELLIGENCE:
+Known Scam Reports: ${advancedAnalysis.threatIntelligence?.knownScamReports?.join(', ') || 'None found'}
+Similar Incidents: ${advancedAnalysis.threatIntelligence?.similarIncidents?.join(', ') || 'None found'}
+Security Advisories: ${advancedAnalysis.threatIntelligence?.securityAdvisories?.join(', ') || 'None found'}
+
+CURRENT THREAT LANDSCAPE:
+Industry Trends: ${advancedAnalysis.currentThreatLandscape?.industryTrends?.join(', ') || 'None available'}
+Recent Campaigns: ${advancedAnalysis.currentThreatLandscape?.recentCampaigns?.join(', ') || 'None found'}
+Official Warnings: ${advancedAnalysis.currentThreatLandscape?.officialWarnings?.join(', ') || 'None found'}`;
+    }
+
     const report = `=== ASK ALLERNA SECURITY EDUCATION REPORT ===
 
 INCIDENT SUMMARY:
@@ -314,6 +346,8 @@ ${basicAnalysis?.whyVerificationMatters || 'Verification is essential for securi
 
 ORGANIZATION-SPECIFIC GUIDANCE:
 ${basicAnalysis?.organizationSpecificGuidance || 'Follow standard security protocols'}
+
+${advancedSection}
 
 ANALYSIS DETAILS:
 - Generated: ${timestamp}
@@ -659,7 +693,7 @@ ANALYSIS DETAILS:
               </div>
             )}
 
-            {/* Advanced Results */}
+            {/* Advanced Results - FIXED VERSION */}
             {advancedAnalysis && (
               <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fade-in">
                 <div className="mb-6">
@@ -669,10 +703,134 @@ ANALYSIS DETAILS:
                   </h2>
                   <p className="text-sm text-gray-600">Additional Cost: $0.22 • Total: $0.27</p>
                 </div>
-                <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-lg">
-                  <h3 className="font-bold text-cyan-800 mb-3">🏢 Advanced Analysis Complete</h3>
-                  <p className="text-cyan-700">Professional investigation results would appear here with business verification, threat intelligence, and current threat landscape data.</p>
-                </div>
+
+                {/* Business Verification Section */}
+                {advancedAnalysis.businessVerification && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg mb-4">
+                    <h3 className="font-bold text-blue-800 mb-3">🏢 Business Verification</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="font-medium text-blue-700">Organization:</span>
+                        <span className="ml-2 text-blue-600">{advancedAnalysis.businessVerification.claimedOrganization}</span>
+                      </div>
+                      
+                      {advancedAnalysis.businessVerification.officialContacts && advancedAnalysis.businessVerification.officialContacts.length > 0 && (
+                        <div>
+                          <span className="font-medium text-blue-700">Official Contacts:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.businessVerification.officialContacts.map((contact, index) => (
+                              <li key={index} className="text-blue-600">{contact}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {advancedAnalysis.businessVerification.comparisonFindings && advancedAnalysis.businessVerification.comparisonFindings.length > 0 && (
+                        <div>
+                          <span className="font-medium text-blue-700">Comparison Findings:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.businessVerification.comparisonFindings.map((finding, index) => (
+                              <li key={index} className="text-blue-600">{finding}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {advancedAnalysis.businessVerification.officialAlerts && advancedAnalysis.businessVerification.officialAlerts.length > 0 && (
+                        <div>
+                          <span className="font-medium text-blue-700">Official Alerts:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.businessVerification.officialAlerts.map((alert, index) => (
+                              <li key={index} className="text-blue-600">{alert}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Threat Intelligence Section */}
+                {advancedAnalysis.threatIntelligence && (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg mb-4">
+                    <h3 className="font-bold text-red-800 mb-3">🚨 Threat Intelligence</h3>
+                    <div className="space-y-2">
+                      {advancedAnalysis.threatIntelligence.knownScamReports && advancedAnalysis.threatIntelligence.knownScamReports.length > 0 && (
+                        <div>
+                          <span className="font-medium text-red-700">Known Scam Reports:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.threatIntelligence.knownScamReports.map((report, index) => (
+                              <li key={index} className="text-red-600">{report}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {advancedAnalysis.threatIntelligence.similarIncidents && advancedAnalysis.threatIntelligence.similarIncidents.length > 0 && (
+                        <div>
+                          <span className="font-medium text-red-700">Similar Incidents:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.threatIntelligence.similarIncidents.map((incident, index) => (
+                              <li key={index} className="text-red-600">{incident}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {advancedAnalysis.threatIntelligence.securityAdvisories && advancedAnalysis.threatIntelligence.securityAdvisories.length > 0 && (
+                        <div>
+                          <span className="font-medium text-red-700">Security Advisories:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.threatIntelligence.securityAdvisories.map((advisory, index) => (
+                              <li key={index} className="text-red-600">{advisory}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Current Threat Landscape Section */}
+                {advancedAnalysis.currentThreatLandscape && (
+                  <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-lg">
+                    <h3 className="font-bold text-purple-800 mb-3">🌍 Current Threat Landscape</h3>
+                    <div className="space-y-2">
+                      {advancedAnalysis.currentThreatLandscape.industryTrends && advancedAnalysis.currentThreatLandscape.industryTrends.length > 0 && (
+                        <div>
+                          <span className="font-medium text-purple-700">Industry Trends:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.currentThreatLandscape.industryTrends.map((trend, index) => (
+                              <li key={index} className="text-purple-600">{trend}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {advancedAnalysis.currentThreatLandscape.recentCampaigns && advancedAnalysis.currentThreatLandscape.recentCampaigns.length > 0 && (
+                        <div>
+                          <span className="font-medium text-purple-700">Recent Campaigns:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.currentThreatLandscape.recentCampaigns.map((campaign, index) => (
+                              <li key={index} className="text-purple-600">{campaign}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {advancedAnalysis.currentThreatLandscape.officialWarnings && advancedAnalysis.currentThreatLandscape.officialWarnings.length > 0 && (
+                        <div>
+                          <span className="font-medium text-purple-700">Official Warnings:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {advancedAnalysis.currentThreatLandscape.officialWarnings.map((warning, index) => (
+                              <li key={index} className="text-purple-600">{warning}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
