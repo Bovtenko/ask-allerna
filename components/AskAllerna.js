@@ -331,7 +331,7 @@ Official Warnings: ${advancedAnalysis.currentThreatLandscape?.officialWarnings?.
 INCIDENT SUMMARY:
 ${input}
 
-ANALYSIS LEVEL: ${analysisLevel} ($${totalCost.toFixed(2)})
+ANALYSIS LEVEL: ${analysisLevel}
 
 === ENHANCED SECURITY ANALYSIS ===
 
@@ -358,7 +358,6 @@ ANALYSIS DETAILS:
 - Generated: ${timestamp}
 - Report ID: ${reportId}
 - Analysis Type: ${analysisLevel}
-- Total Cost: $${totalCost.toFixed(2)}
 - Platform: Ask Allerna Security Education Platform
 
 --- END OF REPORT ---`;
@@ -421,6 +420,19 @@ ANALYSIS DETAILS:
           caret-color: #374151;
         }
         .input-visible { color: #374151; z-index: 3; }
+        .unified-gradient {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .unified-gradient-wave {
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 25%, #667eea 50%, #764ba2 75%, #667eea 100%);
+          background-size: 200% 100%;
+        }
+        .card-unified {
+          background: white;
+          border-radius: 1rem;
+          box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          border: 1px solid rgba(102, 126, 234, 0.1);
+        }
         .scan-overlay {
           position: absolute;
           top: 0;
@@ -437,7 +449,7 @@ ANALYSIS DETAILS:
           bottom: 0;
           left: 0;
           height: 2px;
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+          background: linear-gradient(90deg, #667eea, #764ba2);
           transition: width 0.3s ease;
           z-index: 5;
         }
@@ -450,137 +462,200 @@ ANALYSIS DETAILS:
         {/* Left Column */}
         <div className={`layout-transition ${isAnalysisMode ? 'md:max-h-screen md:overflow-y-auto md:sticky md:top-6' : ''}`}>
           
-          {/* Header */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div className="text-center mb-6">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 via-blue-600 via-purple-600 to-blue-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
-                  <Shield className="w-8 h-8 text-white relative z-10" />
-                </div>
-              </div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">Ask Allerna</h1>
-              <p className="text-gray-600">AI-Powered Security Education Platform</p>
-              <div className="mt-2 flex items-center justify-center gap-4 text-sm">
-                <div className="flex items-center gap-2 text-green-600">
-                  <Zap className="w-4 h-4" />
-                  <span>Enhanced Analysis ($0.05)</span>
-                </div>
-                <div className="flex items-center gap-2 text-blue-600">
-                  <Search className="w-4 h-4" />
-                  <span>Business Verification (+$0.22)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Input Section */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
-                  {isAnalysisMode ? 'Communication Analysis' : 'Describe the suspicious communication:'}
-                </label>
-                {isAnalysisMode && (
-                  <div className="flex gap-2">
-                    <button onClick={newAnalysis} className="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-1">
-                      <RotateCcw className="w-4 h-4" />
-                      New Analysis
-                    </button>
-                    <button onClick={completeReset} className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      Exit Analysis
-                    </button>
+          {/* REDESIGNED STEP 1: Landing Page (Not in Analysis Mode) */}
+          {!isAnalysisMode && (
+            <div className="space-y-8">
+              
+              {/* Unified Header + Input Section */}
+              <div className="card-unified overflow-hidden">
+                
+                {/* Header Section */}
+                <div className="unified-gradient p-8 text-center text-white relative overflow-hidden">
+                  <div className="absolute inset-0 unified-gradient-wave animate-wave opacity-30"></div>
+                  <div className="relative z-10">
+                    <div className="flex justify-center mb-6">
+                      <div className="w-20 h-20 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                        <Shield className="w-10 h-10 text-white" />
+                      </div>
+                    </div>
+                    <h1 className="text-5xl font-bold mb-3">Ask Allerna</h1>
+                    <p className="text-xl opacity-90 mb-6">AI-Powered Security Education Platform</p>
+                    <p className="text-lg opacity-80">Get detailed analysis and verification guidance for suspicious communications</p>
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Input with Highlighting */}
-              <div className={`input-overlay-container ${isAnalysisMode ? 'h-96' : 'h-40'} layout-transition`}>
-                {isAnalysisMode && highlightedText ? (
-                  <>
-                    <div className="highlight-overlay border border-gray-300 rounded-lg bg-white" dangerouslySetInnerHTML={{ __html: highlightedText }} />
-                    <textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      className="input-base w-full h-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      style={{ backgroundColor: 'transparent' }}
-                    />
-                  </>
-                ) : (
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Describe the suspicious email, phone call, text message, or other communication in detail..."
-                    className="input-visible w-full h-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  />
-                )}
-              </div>
+                {/* Input Section */}
+                <div className="p-8">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-lg font-semibold text-gray-800 mb-4">
+                        Describe the suspicious communication:
+                      </label>
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Describe the suspicious email, phone call, text message, or other communication in detail..."
+                        className="w-full h-48 p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none text-gray-700 placeholder-gray-400 transition-all duration-200"
+                      />
+                    </div>
 
-              {/* Color Legend */}
-              {isAnalysisMode && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <div className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    Threat Level Indicators:
-                    {basicAnalysis && (
-                      <span className="text-green-600 font-medium">✓ Analysis Complete</span>
-                    )}
-                    {isHighlighting && (
-                      <div className="flex items-center gap-1 text-blue-600">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
-                        <span>AI analyzing...</span>
+                    {error && (
+                      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-800">
+                          <AlertTriangle className="w-5 h-5" />
+                          <span className="font-medium">Analysis Error</span>
+                        </div>
+                        <p className="text-red-700 text-sm mt-1">{error}</p>
                       </div>
                     )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-red-200 border border-red-300 rounded"></span>
-                      <span>High Risk</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-orange-200 border border-orange-300 rounded"></span>
-                      <span>Medium Risk</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></span>
-                      <span>Suspicious</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 bg-blue-200 border border-blue-300 rounded"></span>
-                      <span>Organization</span>
-                    </div>
+
+                    {/* Main Analysis Button - REDESIGNED */}
+                    <button
+                      onClick={analyzeIncident}
+                      disabled={isAnalyzing || !input.trim()}
+                      className="w-full group relative overflow-hidden rounded-xl text-white font-semibold text-xl py-6 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02]"
+                    >
+                      <div className="absolute inset-0 unified-gradient-wave animate-wave"></div>
+                      <div className="relative z-10 flex items-center justify-center gap-3">
+                        <Search className="w-6 h-6" />
+                        <span>Analyze Communication</span>
+                      </div>
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-red-800">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span className="font-medium">Analysis Error</span>
-                  </div>
-                  <p className="text-red-700 text-sm mt-1">{error}</p>
-                </div>
-              )}
+              {/* Trust Your Instincts Section */}
+              <div className="card-unified p-6">
+                <h3 className="text-xl font-bold text-blue-800 mb-3 flex items-center gap-2">
+                  🧠 Trust Your Instincts
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  The fact that something felt "off" enough for you to check here shows your security awareness is working. 
+                  <strong className="text-blue-800"> That human intuition is your first line of defense.</strong>
+                </p>
+              </div>
 
-              {/* Analysis Button */}
-              {!isAnalysisMode && (
-                <button
-                  onClick={analyzeIncident}
-                  disabled={isAnalyzing || !input.trim()}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 text-white rounded-lg hover:opacity-90 disabled:bg-gray-400 font-medium text-lg transition-all duration-200 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-600 via-green-600 via-emerald-600 to-green-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
-                  <div className="relative z-10 flex items-center gap-2">
-                    <Zap className="w-5 h-5" />
-                    Start Enhanced Security Analysis ($0.05)
-                  </div>
-                </button>
-              )}
+              {/* Privacy Section */}
+              <div className="card-unified p-6">
+                <h3 className="text-xl font-bold text-purple-800 mb-3 flex items-center gap-2">
+                  🔒 Privacy & Data Protection
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  Educational analysis with transparent processing. No data stored permanently.
+                </p>
+              </div>
+
             </div>
-          </div>
+          )}
+
+          {/* EXISTING STEP 2: Analysis Mode - Left Column (Input + Controls) */}
+          {isAnalysisMode && (
+            <>
+              {/* Header */}
+              <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div className="text-center mb-6">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
+                      <div className="absolute inset-0 unified-gradient-wave animate-wave"></div>
+                      <Shield className="w-8 h-8 text-white relative z-10" />
+                    </div>
+                  </div>
+                  <h1 className="text-4xl font-bold text-gray-800 mb-2">Ask Allerna</h1>
+                  <p className="text-gray-600">AI-Powered Security Education Platform</p>
+                </div>
+              </div>
+
+              {/* Input Section */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Communication Analysis
+                    </label>
+                    <div className="flex gap-2">
+                      <button onClick={newAnalysis} className="px-3 py-1 text-sm unified-gradient text-white hover:opacity-90 rounded-lg flex items-center gap-1">
+                        <RotateCcw className="w-4 h-4" />
+                        New Analysis
+                      </button>
+                      <button onClick={completeReset} className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
+                        Exit Analysis
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Input with Highlighting */}
+                  <div className="input-overlay-container h-96 layout-transition">
+                    {highlightedText ? (
+                      <>
+                        <div className="highlight-overlay border border-gray-300 rounded-lg bg-white" dangerouslySetInnerHTML={{ __html: highlightedText }} />
+                        <textarea
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          className="input-base w-full h-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                          style={{ backgroundColor: 'transparent' }}
+                        />
+                      </>
+                    ) : (
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Describe the suspicious email, phone call, text message, or other communication in detail..."
+                        className="input-visible w-full h-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                      />
+                    )}
+                  </div>
+
+                  {/* Color Legend */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Threat Level Indicators:
+                      {basicAnalysis && (
+                        <span className="text-green-600 font-medium">✓ Analysis Complete</span>
+                      )}
+                      {isHighlighting && (
+                        <div className="flex items-center gap-1 text-blue-600">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                          <span>AI analyzing...</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="w-3 h-3 bg-red-200 border border-red-300 rounded"></span>
+                        <span>High Risk</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-3 h-3 bg-orange-200 border border-orange-300 rounded"></span>
+                        <span>Medium Risk</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></span>
+                        <span>Suspicious</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-3 h-3 bg-blue-200 border border-blue-300 rounded"></span>
+                        <span>Organization</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-red-800">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span className="font-medium">Analysis Error</span>
+                      </div>
+                      <p className="text-red-700 text-sm mt-1">{error}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Right Column - Analysis Results */}
+        {/* Right Column - Analysis Results (UNCHANGED - All existing functionality) */}
         {isAnalysisMode && (
           <div className="layout-transition md:max-h-screen md:overflow-y-auto">
             
@@ -590,14 +665,14 @@ ANALYSIS DETAILS:
                 <div className="text-center">
                   <div className="flex justify-center mb-4">
                     <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-600 via-green-600 via-emerald-600 to-green-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
+                      <div className="absolute inset-0 unified-gradient-wave animate-wave"></div>
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white relative z-10"></div>
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">Running Enhanced Security Analysis</h2>
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">Running Security Analysis</h2>
                   <p className="text-gray-600">Analyzing patterns and preparing investigation targets...</p>
-                  <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-sm text-green-700">⚡ Comprehensive analysis in progress • Cost: $0.05 • ~10 seconds</p>
+                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-700">⚡ Comprehensive analysis in progress • ~10 seconds</p>
                   </div>
                 </div>
               </div>
@@ -610,11 +685,11 @@ ANALYSIS DETAILS:
                   <div>
                     <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                       <Zap className="w-6 h-6 text-green-600" />
-                      Enhanced Security Analysis
+                      Security Analysis Complete
                     </h2>
-                    <p className="text-sm text-gray-600">Cost: $0.05 • Analysis Time: ~10 seconds</p>
+                    <p className="text-sm text-gray-600">Analysis Time: ~10 seconds</p>
                   </div>
-                  <button onClick={generateReport} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2">
+                  <button onClick={generateReport} className="px-4 py-2 unified-gradient text-white hover:opacity-90 rounded-lg flex items-center gap-2">
                     📄 Generate Report
                   </button>
                 </div>
@@ -704,19 +779,19 @@ ANALYSIS DETAILS:
                   <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
                     <div className="text-center">
                       <Search className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">Verify This Business?</h3>
-                      <p className="text-gray-600 mb-4">Check if companies and contacts are legitimate with real-time verification</p>
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">Need Professional Investigation?</h3>
+                      <p className="text-gray-600 mb-4">Get detailed business verification and real-time threat intelligence</p>
                       <div className="flex justify-center gap-4">
-                        <button onClick={upgradeToAdvanced} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:opacity-90 font-medium flex items-center gap-2">
+                        <button onClick={upgradeToAdvanced} className="px-6 py-3 unified-gradient text-white rounded-lg hover:opacity-90 font-medium flex items-center gap-2">
                           <Search className="w-5 h-5" />
-                          Verify Business & Contacts (+$0.22)
+                          Run Professional Investigation
                         </button>
                         <button onClick={() => setShowUpgradeOption(false)} className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
                           No Thanks
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Verify: Official company contacts • Recent scam reports • Business legitimacy
+                        Research: Official company contacts • Recent scam reports • Business legitimacy
                       </p>
                     </div>
                   </div>
@@ -730,14 +805,14 @@ ANALYSIS DETAILS:
                 <div className="text-center">
                   <div className="flex justify-center mb-4">
                     <div className="w-16 h-16 rounded-lg flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 via-blue-600 via-purple-600 to-blue-600 animate-wave" style={{backgroundSize: '200% 100%'}}></div>
+                      <div className="absolute inset-0 unified-gradient-wave animate-wave"></div>
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white relative z-10"></div>
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">Verifying Business & Contacts</h2>
-                  <p className="text-gray-600">Conducting targeted verification research...</p>
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">Running Professional Investigation</h2>
+                  <p className="text-gray-600">Conducting business verification and threat intelligence research...</p>
                   <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm text-blue-700">🔍 Targeted verification in progress • Additional cost: $0.22 • ~20 seconds</p>
+                    <p className="text-sm text-blue-700">🔍 Research in progress • ~15 seconds</p>
                   </div>
                 </div>
               </div>
@@ -749,9 +824,9 @@ ANALYSIS DETAILS:
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-2">
                     <Search className="w-6 h-6 text-blue-600" />
-                    Business Verification Results
+                    Professional Investigation Results
                   </h2>
-                  <p className="text-sm text-gray-600">Additional Cost: $0.22 • Total: $0.27</p>
+                  <p className="text-sm text-gray-600">Research completed with verification data</p>
                 </div>
 
                 {/* Business Verification Section */}
@@ -884,35 +959,20 @@ ANALYSIS DETAILS:
               </div>
             )}
 
-            {/* Cost Summary */}
-            {(basicAnalysis || advancedAnalysis) && (
-              <div className="bg-white rounded-lg shadow-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <span className="font-medium">Analysis Cost:</span>
-                    <span className="ml-2 text-green-600 font-bold">${totalCost.toFixed(2)}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {advancedAnalysis ? 'Enhanced + Business Verification' : 'Enhanced Security Analysis'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Footer Sections - Also show in analysis mode at bottom of right column */}
+            {/* Footer Sections - Show in analysis mode at bottom of right column */}
             {isAnalysisMode && (
               <>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="card-unified p-4 mb-4">
                   <h3 className="font-bold text-blue-800 mb-2">🧠 Trust Your Instincts</h3>
                   <p className="text-sm text-blue-700">
                     The fact that something felt "off" enough for you to check here shows your security awareness is working. 
                     <strong> That human intuition is your first line of defense.</strong>
                   </p>
                 </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                  <h3 className="font-bold text-amber-800 mb-2">🔒 Privacy & Data Protection</h3>
-                  <p className="text-sm text-amber-700">
-                    Two-tier processing with cost transparency. No data stored permanently.
+                <div className="card-unified p-4 mb-4">
+                  <h3 className="font-bold text-purple-800 mb-2">🔒 Privacy & Data Protection</h3>
+                  <p className="text-sm text-purple-700">
+                    Educational analysis with transparent processing. No data stored permanently.
                   </p>
                 </div>
               </>
@@ -925,7 +985,7 @@ ANALYSIS DETAILS:
       {showReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+            <div className="unified-gradient text-white p-4 flex items-center justify-between">
               <h3 className="text-xl font-bold">📄 Security Education Report</h3>
               <button onClick={() => setShowReport(false)} className="text-white hover:text-gray-200 text-2xl">×</button>
             </div>
@@ -946,28 +1006,12 @@ ANALYSIS DETAILS:
         </div>
       )}
 
-      {/* Footer Sections - Only when not in analysis mode */}
+      {/* Footer - Only when not in analysis mode */}
       {!isAnalysisMode && (
-        <>
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-bold text-blue-800 mb-2">🧠 Trust Your Instincts</h3>
-            <p className="text-sm text-blue-700">
-              The fact that something felt "off" enough for you to check here shows your security awareness is working. 
-              <strong> That human intuition is your first line of defense.</strong>
-            </p>
-          </div>
-          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h3 className="font-bold text-amber-800 mb-2">🔒 Privacy & Data Protection</h3>
-            <p className="text-sm text-amber-700">
-              Two-tier processing with cost transparency. No data stored permanently.
-            </p>
-          </div>
-        </>
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>🔒 Ask Allerna • AI-Powered Security Education Platform</p>
+        </div>
       )}
-
-      <div className="mt-4 text-center text-sm text-gray-500">
-        <p>🔒 Ask Allerna • AI-Powered Security Education Platform</p>
-      </div>
     </div>
   );
 };
