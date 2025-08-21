@@ -1,174 +1,181 @@
-// components/AskAllerna.js - Updated with Step 2 Auto-Trigger
+// components/AskAllerna.js - Complete Updated Code with Raw Research Data
 
 import React, { useState, useEffect } from 'react';
 import { Shield, Send, Search, Clock, CheckCircle, AlertTriangle, RotateCcw, FileText, Eye, Flag, CheckSquare, Building, Users, TrendingUp, Copy, ExternalLink, Loader } from 'lucide-react';
 
 const AskAllerna = () => {
-  const [input, setInput] = useState('');
-  const [step1Analysis, setStep1Analysis] = useState(null);
-  const [step2Research, setStep2Research] = useState(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isResearching, setIsResearching] = useState(false);
-  const [researchStatus, setResearchStatus] = useState('');
-  const [error, setError] = useState(null);
-  const [isAnalysisMode, setIsAnalysisMode] = useState(false);
-  const [highlightedText, setHighlightedText] = useState('');
-  const [showReport, setShowReport] = useState(false);
-  const [reportText, setReportText] = useState('');
+ const [input, setInput] = useState('');
+ const [step1Analysis, setStep1Analysis] = useState(null);
+ const [step2Research, setStep2Research] = useState(null);
+ const [isAnalyzing, setIsAnalyzing] = useState(false);
+ const [isResearching, setIsResearching] = useState(false);
+ const [researchStatus, setResearchStatus] = useState('');
+ const [error, setError] = useState(null);
+ const [isAnalysisMode, setIsAnalysisMode] = useState(false);
+ const [highlightedText, setHighlightedText] = useState('');
+ const [showReport, setShowReport] = useState(false);
+ const [reportText, setReportText] = useState('');
 
-  // Highlighting function (keeping the same as before)
-  const highlightSuspiciousText = (text) => {
-    if (!text) return '';
-    let highlightedText = text;
+ // Fallback regex-based highlighting
+ const highlightSuspiciousText = (text) => {
+   if (!text) return '';
+   let highlightedText = text;
 
-    const highRiskPatterns = [
-      /https?:\/\/[^\s]+/gi,
-      /www\.[^\s]+/gi,
-      /\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/gi,
-      /\$[0-9,]+(\.[0-9]{2})?/gi,
-      /bitcoin|btc|cryptocurrency|crypto|wallet/gi,
-    ];
+   // High Risk Patterns (Red)
+   const highRiskPatterns = [
+     /https?:\/\/[^\s]+/gi,
+     /www\.[^\s]+/gi,
+     /\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/gi,
+     /\$[0-9,]+(\.[0-9]{2})?/gi,
+     /bitcoin|btc|cryptocurrency|crypto|wallet/gi,
+   ];
 
-    const mediumRiskPatterns = [
-      /\b(urgent|immediately|asap|expire[sd]?|deadline|limited time|act now)\b/gi,
-      /\b(verify|confirm|update|validate|authenticate)\b/gi,
-      /\b(click here|download|install|enable|disable)\b/gi,
-    ];
+   // Medium Risk Patterns (Orange)
+   const mediumRiskPatterns = [
+     /\b(urgent|immediately|asap|expire[sd]?|deadline|limited time|act now)\b/gi,
+     /\b(verify|confirm|update|validate|authenticate)\b/gi,
+     /\b(click here|download|install|enable|disable)\b/gi,
+   ];
 
-    const suspiciousPatterns = [
-      /\b(whatsapp|telegram|signal)\b/gi,
-      /\b(job offer|employment|work from home|easy money)\b/gi,
-      /\b(winner|prize|lottery|congratulations)\b/gi,
-    ];
+   // Suspicious Patterns (Yellow)
+   const suspiciousPatterns = [
+     /\b(whatsapp|telegram|signal)\b/gi,
+     /\b(job offer|employment|work from home|easy money)\b/gi,
+     /\b(winner|prize|lottery|congratulations)\b/gi,
+   ];
 
-    const companyPatterns = [
-      /\b(amazon|microsoft|apple|google|facebook|paypal)\b/gi,
-      /\b(bank|credit union|visa|mastercard)\b/gi,
-    ];
+   // Company Patterns (Blue)
+   const companyPatterns = [
+     /\b(amazon|microsoft|apple|google|facebook|paypal)\b/gi,
+     /\b(bank|credit union|visa|mastercard)\b/gi,
+   ];
 
-    highRiskPatterns.forEach(pattern => {
-      highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-red-100 text-red-800 px-2 py-1 rounded font-medium">${match}</span>`
-      );
-    });
+   // Apply highlighting
+   highRiskPatterns.forEach(pattern => {
+     highlightedText = highlightedText.replace(pattern, (match) => 
+       `<span class="bg-red-100 text-red-800 px-2 py-1 rounded font-medium">${match}</span>`
+     );
+   });
 
-    mediumRiskPatterns.forEach(pattern => {
-      highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded font-medium">${match}</span>`
-      );
-    });
+   mediumRiskPatterns.forEach(pattern => {
+     highlightedText = highlightedText.replace(pattern, (match) => 
+       `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded font-medium">${match}</span>`
+     );
+   });
 
-    suspiciousPatterns.forEach(pattern => {
-      highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium">${match}</span>`
-      );
-    });
+   suspiciousPatterns.forEach(pattern => {
+     highlightedText = highlightedText.replace(pattern, (match) => 
+       `<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium">${match}</span>`
+     );
+   });
 
-    companyPatterns.forEach(pattern => {
-      highlightedText = highlightedText.replace(pattern, (match) => 
-        `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">${match}</span>`
-      );
-    });
+   companyPatterns.forEach(pattern => {
+     highlightedText = highlightedText.replace(pattern, (match) => 
+       `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">${match}</span>`
+     );
+   });
 
-    return highlightedText;
-  };
+   return highlightedText;
+ };
 
-  useEffect(() => {
-    if (isAnalysisMode && input) {
-      const highlighted = highlightSuspiciousText(input);
-      setHighlightedText(highlighted);
-    }
-  }, [input, isAnalysisMode]);
+ // Update highlighted text when in analysis mode
+ useEffect(() => {
+   if (isAnalysisMode && input) {
+     const highlighted = highlightSuspiciousText(input);
+     setHighlightedText(highlighted);
+   }
+ }, [input, isAnalysisMode]);
 
-  // Step 1: Initial analysis
-  const analyzeIncident = async () => {
-    if (!input.trim()) return;
-    setIsAnalysisMode(true);
-    setHighlightedText(highlightSuspiciousText(input));
-    setIsAnalyzing(true);
-    setError(null);
-    setStep1Analysis(null);
-    setStep2Research(null);
-    
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incident: input, analysisType: 'context' })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setStep1Analysis(data);
-        
-        // Auto-trigger Step 2 if needed
-        if (data.shouldAutoTrigger) {
-          setTimeout(() => runDeepResearch(data), 1000);
-        }
-      } else {
-        throw new Error(`Analysis failed: ${response.status}`);
-      }
-    } catch (error) {
-      setError(`Analysis error: ${error.message}`);
-    }
-    
-    setIsAnalyzing(false);
-  };
+ // Step 1: Initial analysis
+ const analyzeIncident = async () => {
+   if (!input.trim()) return;
+   setIsAnalysisMode(true);
+   setHighlightedText(highlightSuspiciousText(input));
+   setIsAnalyzing(true);
+   setError(null);
+   setStep1Analysis(null);
+   setStep2Research(null);
+   
+   try {
+     const response = await fetch("/api/analyze", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ incident: input, analysisType: 'context' })
+     });
+     
+     if (response.ok) {
+       const data = await response.json();
+       setStep1Analysis(data);
+       
+       // Auto-trigger Step 2 if needed
+       if (data.shouldAutoTrigger) {
+         setTimeout(() => runDeepResearch(data), 1000);
+       }
+     } else {
+       throw new Error(`Analysis failed: ${response.status}`);
+     }
+   } catch (error) {
+     setError(`Analysis error: ${error.message}`);
+   }
+   
+   setIsAnalyzing(false);
+ };
 
-  // Step 2: Deep research
-  const runDeepResearch = async (step1Results) => {
-    setIsResearching(true);
-    setResearchStatus('Initializing research...');
-    
-    try {
-      setResearchStatus('Verifying business information...');
-      
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          incident: input, 
-          analysisType: 'deep_research',
-          step1Results: step1Results || step1Analysis
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setStep2Research(data);
-        setResearchStatus('Research completed');
-      } else {
-        throw new Error(`Research failed: ${response.status}`);
-      }
-    } catch (error) {
-      setError(`Research error: ${error.message}`);
-      setResearchStatus('Research failed');
-    }
-    
-    setIsResearching(false);
-  };
+ // Step 2: Deep research
+ const runDeepResearch = async (step1Results) => {
+   setIsResearching(true);
+   setResearchStatus('Initializing research...');
+   
+   try {
+     setResearchStatus('Verifying business information...');
+     
+     const response = await fetch("/api/analyze", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ 
+         incident: input, 
+         analysisType: 'deep_research',
+         step1Results: step1Results || step1Analysis
+       })
+     });
+     
+     if (response.ok) {
+       const data = await response.json();
+       setStep2Research(data);
+       setResearchStatus('Research completed');
+     } else {
+       throw new Error(`Research failed: ${response.status}`);
+     }
+   } catch (error) {
+     setError(`Research error: ${error.message}`);
+     setResearchStatus('Research failed');
+   }
+   
+   setIsResearching(false);
+ };
 
-  const newAnalysis = () => {
-    setInput('');
-    setStep1Analysis(null);
-    setStep2Research(null);
-    setError(null);
-    setHighlightedText('');
-    setResearchStatus('');
-  };
+ const newAnalysis = () => {
+   setInput('');
+   setStep1Analysis(null);
+   setStep2Research(null);
+   setError(null);
+   setHighlightedText('');
+   setResearchStatus('');
+ };
 
-  const exitAnalysis = () => {
-    newAnalysis();
-    setIsAnalysisMode(false);
-  };
+ const exitAnalysis = () => {
+   newAnalysis();
+   setIsAnalysisMode(false);
+ };
 
-  const generateReport = () => {
-    const timestamp = new Date().toLocaleString();
-    const reportId = `ALR-${Date.now().toString().slice(-8)}`;
+ // UPDATED: Generate report with raw research data
+ const generateReport = () => {
+   const timestamp = new Date().toLocaleString();
+   const reportId = `ALR-${Date.now().toString().slice(-8)}`;
 
-    let step2Section = '';
-    if (step2Research && step2Research.researchConducted) {
-      step2Section = `
+   let step2Section = '';
+   if (step2Research && step2Research.researchConducted) {
+     step2Section = `
 === DEEP RESEARCH RESULTS ===
 
 INVESTIGATION SUMMARY:
@@ -192,10 +199,13 @@ Recent Incidents: ${step2Research.threatIntelligence?.recentIncidents?.join(', '
 
 VERIFICATION GUIDANCE:
 How to Verify: ${step2Research.verificationGuidance?.howToVerify?.join(', ') || 'Standard verification recommended'}
-Official Channels: ${step2Research.verificationGuidance?.officialChannels?.join(', ') || 'Contact through known methods'}`;
-    }
+Official Channels: ${step2Research.verificationGuidance?.officialChannels?.join(', ') || 'Contact through known methods'}
 
-    const report = `=== ASK ALLERNA SECURITY ANALYSIS REPORT ===
+=== DETAILED RESEARCH FINDINGS ===
+${step2Research.detailedFindings || step2Research.rawResults || 'Detailed research data not available'}`;
+   }
+
+   const report = `=== ASK ALLERNA SECURITY ANALYSIS REPORT ===
 
 INCIDENT SUMMARY:
 ${input}
@@ -224,144 +234,143 @@ ${step2Section}
 
 --- END OF REPORT ---`;
 
-    setReportText(report);
-    setShowReport(true);
-  };
+   setReportText(report);
+   setShowReport(true);
+ };
 
-  const copyReport = async () => {
-    try {
-      await navigator.clipboard.writeText(reportText);
-      alert('Report copied to clipboard!');
-    } catch (err) {
-      const textArea = document.createElement('textarea');
-      textArea.value = reportText;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      alert('Report copied to clipboard!');
-    }
-  };
+ const copyReport = async () => {
+   try {
+     await navigator.clipboard.writeText(reportText);
+     alert('Report copied to clipboard!');
+   } catch (err) {
+     const textArea = document.createElement('textarea');
+     textArea.value = reportText;
+     document.body.appendChild(textArea);
+     textArea.select();
+     document.execCommand('copy');
+     document.body.removeChild(textArea);
+     alert('Report copied to clipboard!');
+   }
+ };
 
-  return (
-    <div className="min-h-screen bg-white font-sans">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .highlight-overlay {
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          line-height: 1.5;
-          pointer-events: none;
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          padding: 1rem;
-          font-family: inherit;
-          font-size: inherit;
-          z-index: 1;
-          overflow: auto;
-        }
-        .input-overlay-container { position: relative; }
-        .input-base {
-          background: transparent;
-          position: relative;
-          z-index: 2;
-          color: transparent;
-          caret-color: #374151;
-        }
-        .input-visible { color: #374151; z-index: 3; }
-        `
-      }} />
+ return (
+   <div className="min-h-screen bg-white font-sans">
+     <style dangerouslySetInnerHTML={{
+       __html: `
+       .highlight-overlay {
+         white-space: pre-wrap;
+         word-wrap: break-word;
+         line-height: 1.5;
+         pointer-events: none;
+         position: absolute;
+         top: 0; left: 0; right: 0; bottom: 0;
+         padding: 1rem;
+         font-family: inherit;
+         font-size: inherit;
+         z-index: 1;
+         overflow: auto;
+       }
+       .input-overlay-container { position: relative; }
+       .input-base {
+         background: transparent;
+         position: relative;
+         z-index: 2;
+         color: transparent;
+         caret-color: #374151;
+       }
+       .input-visible { color: #374151; z-index: 3; }
+       `
+     }} />
 
-      {/* Landing Page */}
-      {!isAnalysisMode && (
-        <div className="max-w-2xl mx-auto px-6 py-12">
-          <div className="text-center mb-10">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
-              <Shield className="w-8 h-8 text-blue-600" />
-            </div>
-            
-            <h1 className="text-5xl font-semibold text-gray-900 mb-4">Ask Allerna</h1>
-            <p className="text-xl text-gray-600 mb-8">AI-Powered Scam Detection</p>
-            <p className="text-lg text-gray-600 max-w-lg mx-auto">
-              Detect scams and social engineering attempts across all formats: email, SMS, voice, QR codes, job offers, and more
-            </p>
-          </div>
+     {/* Landing Page */}
+     {!isAnalysisMode && (
+       <div className="max-w-2xl mx-auto px-6 py-12">
+         <div className="text-center mb-10">
+           <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
+             <Shield className="w-8 h-8 text-blue-600" />
+           </div>
+           
+           <h1 className="text-5xl font-semibold text-gray-900 mb-4">Ask Allerna</h1>
+           <p className="text-xl text-gray-600 mb-8">AI-Powered Scam Detection</p>
+           <p className="text-lg text-gray-600 max-w-lg mx-auto">
+             Detect scams and social engineering attempts across all formats: email, SMS, voice, QR codes, job offers, and more
+           </p>
+         </div>
 
-          <div className="mb-8">
-            <label className="block text-lg font-medium text-gray-900 mb-4">
-              Describe the suspicious communication:
-            </label>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Paste the suspicious email, text message, phone call transcript, job offer, or describe any communication that seems suspicious..."
-              className="w-full h-48 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 transition-all duration-200"
-            />
-            
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-800">
-                  <AlertTriangle className="w-5 h-5" />
-                  <span className="font-medium">Analysis Error</span>
-                </div>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
-              </div>
-            )}
+         <div className="mb-8">
+           <label className="block text-lg font-medium text-gray-900 mb-4">
+             Describe the suspicious communication:
+           </label>
+           <textarea
+             value={input}
+             onChange={(e) => setInput(e.target.value)}
+             placeholder="Paste the suspicious email, text message, phone call transcript, job offer, or describe any communication that seems suspicious..."
+             className="w-full h-48 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 transition-all duration-200"
+           />
+           
+           {error && (
+             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+               <div className="flex items-center gap-2 text-red-800">
+                 <AlertTriangle className="w-5 h-5" />
+                 <span className="font-medium">Analysis Error</span>
+               </div>
+               <p className="text-red-700 text-sm mt-1">{error}</p>
+             </div>
+           )}
 
-            <button
-              onClick={analyzeIncident}
-              disabled={isAnalyzing || !input.trim()}
-              className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium text-lg py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-            >
-              <Search className="w-5 h-5" />
-              <span>Analyze for Scams</span>
-            </button>
-          </div>
+           <button
+             onClick={analyzeIncident}
+             disabled={isAnalyzing || !input.trim()}
+             className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium text-lg py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+           >
+             <Search className="w-5 h-5" />
+             <span>Analyze for Scams</span>
+           </button>
+         </div>
 
-          <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <span>🧠</span>
-                Trust Your Instincts
-              </h3>
-              <p className="text-blue-800">
-                The fact that something felt "off" enough for you to check here shows your security awareness is working. 
-                <strong> That human intuition is your first line of defense.</strong>
-              </p>
-            </div>
+         <div className="space-y-6">
+           <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
+             <h3 className="text-lg font-medium text-blue-900 mb-2 flex items-center gap-2">
+               <span>🧠</span>
+               Trust Your Instincts
+             </h3>
+             <p className="text-blue-800">
+               The fact that something felt "off" enough for you to check here shows your security awareness is working. 
+               <strong> That human intuition is your first line of defense.</strong>
+             </p>
+           </div>
 
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 flex items-center gap-2">
-                <span>🔒</span>
-                Privacy & Data Protection
-              </h3>
-              <p className="text-gray-700">
-                Neutral analysis with transparent processing. No data stored permanently.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+           <div className="bg-gray-50 border border-gray-100 rounded-lg p-6">
+             <h3 className="text-lg font-medium text-gray-900 mb-2 flex items-center gap-2">
+               <span>🔒</span>
+               Privacy & Data Protection
+             </h3>
+             <p className="text-gray-700">
+               Neutral analysis with transparent processing. No data stored permanently.
+             </p>
+           </div>
+         </div>
+       </div>
+     )}
 
-      {/* Analysis Dashboard */}
-      {isAnalysisMode && (
-        <div className="h-screen flex">
-          
-          {/* Left Column - Input */}
-          <div className="w-1/2 border-r border-gray-100 p-6 overflow-y-auto">
-            
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-semibold text-gray-900">Ask Allerna</span>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={newAnalysis}
-
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 flex items-center gap-2"
+     {/* Analysis Dashboard */}
+     {isAnalysisMode && (
+       <div className="h-screen flex">
+         
+         {/* Left Column - Input */}
+         <div className="w-1/2 border-r border-gray-100 p-6 overflow-y-auto">
+           
+           <div className="flex items-center justify-between mb-8">
+             <div className="flex items-center gap-3">
+               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                 <Shield className="w-5 h-5 text-white" />
+               </div>
+               <span className="text-xl font-semibold text-gray-900">Ask Allerna</span>
+             </div>
+             <div className="flex gap-2">
+               <button 
+                 onClick={newAnalysis}
+                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 flex items-center gap-2"
                >
                  <RotateCcw className="w-4 h-4" />
                  New
@@ -778,6 +787,21 @@ ${step2Section}
                          </ul>
                        </div>
                      )}
+                   </div>
+                 </div>
+               )}
+
+               {/* Raw Research Data Display */}
+               {(step2Research.detailedFindings || step2Research.rawResults) && (
+                 <div className="border border-gray-200 bg-gray-50 rounded-lg p-4">
+                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                     <FileText className="w-4 h-4" />
+                     Detailed Research Findings
+                   </h3>
+                   <div className="bg-white border border-gray-200 rounded p-3 max-h-96 overflow-y-auto">
+                     <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                       {step2Research.detailedFindings || step2Research.rawResults}
+                     </pre>
                    </div>
                  </div>
                )}
