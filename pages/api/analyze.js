@@ -1,18 +1,17 @@
 // pages/api/analyze.js
-// Investigation-focused analysis API for Ask Allerna.
-// Neutral language (no scam/not-scam claims). Returns highlights, consistency signals,
-// what to double-check, and a guided verification checklist.
-// Uses Anthropic (Claude 3.5 Haiku) and Perplexity if keys are set; otherwise falls back to local heuristics.
+// Ask Allerna — Facts-first investigation API
+// Neutral, educational, and discovery-oriented. No “scam/not-scam” claims.
+// If ANTHROPIC/Perplexity keys exist, they’re used for optional enrichment;
+// the core “Discoveries” are computed locally for speed and determinism.
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const PPLX_URL = "https://api.perplexity.ai/chat/completions";
 
-// 23 investigation pattern types (neutral phrasing)
 const PATTERN_CATEGORIES = [
+  "Job Offer / Recruitment",
   "Account Verification / Password Reset",
   "Business Email Compromise (BEC)",
   "Invoice or Payment Method Update",
-  "Job Offer / Recruitment",
   "Technical Support Impersonation",
   "Government or Tax Notice",
   "Bank / Financial Institution",
@@ -34,277 +33,303 @@ const PATTERN_CATEGORIES = [
   "Other / Needs Review",
 ];
 
-// Light keyword map to suggest a pattern when the LLM is unavailable
 const CATEGORY_HINTS = [
-  { cat: "Account Verification / Password Reset", rx: /(verify|password|account|locked|suspend)/i },
-  { cat: "Business Email Compromise (BEC)", rx: /(urgent|wire|bank|routing|ceo|cfo|approve|immediately)/i },
-  { cat: "Invoice or Payment Method Update", rx: /(invoice|payment|update payment|billing|card on file)/i },
-  { cat: "Job Offer / Recruitment", rx: /(hiring|job offer|recruit|salary|interview|position)/i },
-  { cat: "Technical Support Impersonation", rx: /(microsoft|apple|support|technician|virus|malware|remote)/i },
-  { cat: "Government or Tax Notice", rx: /(irs|tax|warrant|subpoena|ssa|customs)/i },
-  { cat: "Bank / Financial Institution", rx: /(bank of|chase|boa|wells|credit union|wire)/i },
-  { cat: "Crypto Investment or Wallet Support", rx: /(crypto|coinbase|wallet|metamask|seed|private key)/i },
-  { cat: "Prize / Lottery / Giveaway", rx: /(winner|lottery|prize|claim)/i },
-  { cat: "Charity / Donation", rx: /(donate|charity|foundation|relief)/i },
-  { cat: "Shipping / Delivery", rx: /(package|shipment|deliver|fedex|ups|tracking)/i },
-  { cat: "Marketplace Buyer/Seller (e.g., Facebook/Craigslist)", rx: /(buyer|seller|marketplace|craigslist|facebook)/i },
-  { cat: "Rental / Real Estate", rx: /(lease|rental|landlord|tenant|deposit)/i },
-  { cat: "Vendor Onboarding / Supplier Change", rx: /(vendor|supplier|onboarding|net30|net60|w9|ach)/i },
-  { cat: "Utility or Telecom Provider", rx: /(utility|electric|water|telecom|spectrum|verizon|att)/i },
-  { cat: "Subscription Renewal / Renewal Reminder", rx: /(subscription|renewal|expires|auto-renew)/i },
-  { cat: "Social Media Account Recovery", rx: /(facebook|instagram|twitter|x\.com|recovery)/i },
-  { cat: "MFA Fatigue / Push Bombing", rx: /(mfa|push|approve|two-factor)/i },
-  { cat: "QR (Quishing)", rx: /(qr\s?code|scan)/i },
-  { cat: "Callback Phishing (TOAD)", rx: /(call back|toll free|refund|support number)/i },
-  { cat: "Voice/Video Impersonation (AI Deepfake)", rx: /(voice|video|impersonation|sounds like)/i },
+  { cat: "Job Offer / Recruitment", rx: /(job|hiring|recruit|recruiter|position|part[- ]?time|opportunit)/i },
+  { cat: "Business Email Compromise (BEC)", rx: /\b(urgent|wire|routing|approve|cfo|ceo|immediately)\b/i },
+  { cat: "Invoice or Payment Method Update", rx: /(invoice|billing|payment method|update payment|card on file)/i },
+  { cat: "Account Verification / Password Reset", rx: /(verify|password|account|locked|suspend|reset)/i },
   { cat: "Document Share (e.g., DocuSign/SharePoint)", rx: /(docusign|sharepoint|document shared|view document)/i },
+  { cat: "Callback Phishing (TOAD)", rx: /(call\s?back|toll[- ]?free|refund|support number)/i },
+  { cat: "Shipping / Delivery", rx: /(package|shipment|deliver|fedex|ups|tracking)/i },
+  { cat: "Bank / Financial Institution", rx: /(bank|chase|boa|wells|credit union|wire)/i },
 ];
 
+const RISK_TLDS = new Set(["xyz", "top", "shop", "cam", "rest", "zip", "click", "kim", "gq", "cf", "ml", "work", "loan", "men"]);
+const WELL_KNOWN_BRANDS = ["TEMU", "Amazon", "Microsoft", "Apple", "Meta", "Facebook", "Instagram", "PayPal", "Chase", "Wells Fargo", "IRS", "UPS", "FedEx"];
+
+// very small US area code map just for useful hints (extend as needed)
+const AREA_MAP = {
+  "781": "Massachusetts (US)",
+  "617": "Massachusetts (US)",
+  "212": "New York (US)",
+  "213": "California (US)",
+  "305": "Florida (US)",
+  "702": "Nevada (US)",
+  "415": "California (US)",
+  "646": "New York (US)",
+  "347": "New York (US)",
+  "718": "New York (US)",
+};
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ userMessage: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ userMessage: "Method not allowed" });
 
   try {
     const { incident, analysisType, step1Results } = req.body || {};
-
-    // Input validation
     if (typeof incident !== "string" || incident.trim().length < 10) {
       return res.status(400).json({
-        userMessage:
-          "Please paste a bit more detail so we can analyze the message clearly (a few sentences works best).",
+        userMessage: "Please paste the full message (a few sentences helps extract details).",
       });
     }
-
     if (!["context", "deep_research"].includes(analysisType)) {
-      return res.status(400).json({
-        userMessage: "Invalid analysis type. Use 'context' or 'deep_research'.",
-      });
+      return res.status(400).json({ userMessage: "Invalid analysis type." });
     }
 
     if (analysisType === "context") {
-      const step1 = await runContextAnalysis(incident);
+      const step1 = await contextAnalysisFactsFirst(incident);
       return res.status(200).json(step1);
     }
 
-    // deep_research
-    const baseSummary = step1Results || (await runContextAnalysis(incident));
-    const step2 = await runDeepResearch(incident, baseSummary);
+    // deep research
+    const baseline = step1Results || (await contextAnalysisFactsFirst(incident));
+    const step2 = await deepResearchNeutral(incident, baseline);
     return res.status(200).json(step2);
-  } catch (e) {
-    const tooMany = /429|rate.?limit/i.test(String(e?.message || ""));
+  } catch (err) {
+    const tooMany = /429|rate.?limit/i.test(String(err?.message || ""));
     return res.status(tooMany ? 429 : 500).json({
       userMessage: tooMany
-        ? "A lot of people are using the service right now. Please try again shortly."
-        : "We couldn't complete the check just now. Please try again.",
+        ? "Heavy traffic right now. Please try again in a moment."
+        : "We couldn't finish that check. Please try again.",
     });
   }
 }
 
-/* ----------------------------- STEP 1 ---------------------------------- */
+/* ---------------------------------- STEP 1: Facts-first ---------------------------------- */
 
-async function runContextAnalysis(incident) {
-  // Prefer Claude 3.5 Haiku for structure; fallback to local heuristics
+async function contextAnalysisFactsFirst(text) {
+  // Deterministic local extraction (fast)
+  const entities = extractEntities(text);
+  const derived = deriveSignals(text, entities);
+
+  // Optional: Anthropic enrichment for phrasing (kept minimal and neutral)
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
-
+  let enrichedSummary = null;
   if (hasAnthropic) {
     try {
-      const prompt = [
-        "You are an investigation assistant. Analyze the pasted communication.",
-        "Return STRICT JSON (no prose, no markdown) in this shape:",
-        `{
-          "shouldAutoTrigger": boolean,
-          "patternCategory": string,  // choose from this list: ${PATTERN_CATEGORIES.join("; ") }
-          "highlights": string[],     // specific plain-language observations
-          "entities": {
-            "organizations": string[],
-            "emailAddresses": string[],
-            "domains": string[],
-            "urls": string[],
-            "phoneNumbers": string[],
-            "amounts": string[],
-            "addresses": string[]
-          },
-          "consistencySignals": string[], // things that look normal/expected
-          "cautionSignals": string[],     // things that deserve a closer look
-          "riskTone": "CAUTION" | "REVIEW" | "CONSISTENT",
-          "userFriendly": {
-            "summary": string,                  // neutral, helpful summary in 1-2 sentences
-            "whatToDoubleCheck": string[],      // checks a person can do themselves
-            "independentVerification": string[],// steps with examples (no brand promises)
-            "helpfulTips": string[]             // brief educational notes
-          }
-        }`,
-        "Be neutral. Avoid claims like 'this is a scam'. Focus on education and verification.",
-        "Keep lists concise and actionable. Use [] if none.",
-        "Text:\n" + incident,
-      ].join("\n");
-
-      const r = await fetch(ANTHROPIC_URL, {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-haiku-20241022",
-          max_tokens: 1400,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-
-      const data = await r.json();
-      const raw = data?.content?.[0]?.text?.trim() || "";
-      const parsed = tryParseJson(raw);
-
-      if (parsed && typeof parsed === "object") {
-        // Ensure category is one of our 23 labels
-        parsed.patternCategory = snapToCategory(parsed.patternCategory);
-        // Reasonable default for auto-trigger: suggest research when tone is CAUTION or REVIEW
-        parsed.shouldAutoTrigger =
-          parsed.shouldAutoTrigger ?? ["CAUTION", "REVIEW"].includes(parsed.riskTone);
-
-        return sanitizeStep1(parsed, incident);
-      }
+      enrichedSummary = await claudeNeutralSummary(text, entities, derived);
     } catch {
-      // fall through to local
+      // ignore — keep local summary
     }
   }
 
-  // Local heuristics fallback
-  return sanitizeStep1(localHeuristics(incident), incident);
-}
-
-function localHeuristics(incident) {
-  const emails = toUnique((incident.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).map((s) => s.toLowerCase()));
-  const urls = toUnique((incident.match(/\bhttps?:\/\/[^\s)]+/gi) || []).map((s) => s));
-  const domains = toUnique([
-    ...emails.map((e) => e.split("@")[1]),
-    ...(incident.match(/\b[a-z0-9-]+\.[a-z]{2,}\b/gi) || []),
-  ].map((d) => d.toLowerCase()));
-  const phones = toUnique(incident.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g) || []);
-  const amounts = toUnique(incident.match(/\$[\d,]+(?:\.\d{2})?|\b\d{2,3}k\b/gi) || []);
-
-  const urgent = /\b(urgent|immediately|within 24|asap|last chance|final notice)\b/i.test(incident);
-  const credentialAsk = /\b(verify|login|password|reset|update (payment|billing)|confirm account)\b/i.test(incident);
-  const linkAsk = /\b(click|follow the link|open the portal|update via link)\b/i.test(incident);
-  const payout = /\b(refund|wire|bank|routing|ach|crypto)\b/i.test(incident);
-
-  const highlight = [];
-  if (urgent) highlight.push("Uses time pressure (e.g., urgent or immediate deadline).");
-  if (credentialAsk) highlight.push("Mentions verifying accounts, passwords, or payment details.");
-  if (linkAsk) highlight.push("Invites clicking a link or portal to resolve an issue.");
-  if (payout) highlight.push("Discusses funds, banking, or refund processing.");
-
-  // Caution vs review vs consistent
-  const cautionSignals = [];
-  if (urgent) cautionSignals.push("Urgent/deadline pressure is a common manipulation technique.");
-  if (credentialAsk) cautionSignals.push("Requests for credentials or payment updates need independent confirmation.");
-  if (domains.length > 1) cautionSignals.push("Multiple domains present—ensure they match official sites.");
-  if (urls.length > 0) cautionSignals.push("Links may redirect; navigate to official sites manually.");
-
-  const consistencySignals = [];
-  if (phones.length) consistencySignals.push("A call-back number is provided—compare it with the official website.");
-  if (amounts.length) consistencySignals.push("Specific amounts are stated—confirm against your records.");
-
-  let riskTone = "REVIEW";
-  if (urgent || credentialAsk || linkAsk) riskTone = "CAUTION";
-  if (!urgent && !credentialAsk && !linkAsk && consistencySignals.length > 0) riskTone = "CONSISTENT";
-
-  const cat = (CATEGORY_HINTS.find((m) => m.rx.test(incident))?.cat) || "Other / Needs Review";
+  const riskTone = derived.cautionSignals.length
+    ? "CAUTION"
+    : derived.consistencySignals.length
+    ? "CONSISTENT"
+    : "REVIEW";
 
   return {
-    shouldAutoTrigger: riskTone !== "CONSISTENT",
-    patternCategory: cat,
-    highlights: highlight,
-    entities: {
-      organizations: [],
-      emailAddresses: emails,
-      domains,
-      urls,
-      phoneNumbers: phones,
-      amounts,
-      addresses: [],
-    },
-    consistencySignals,
-    cautionSignals,
+    shouldAutoTrigger: riskTone !== "CONSISTENT", // suggest deeper checks when anything notable appears
+    patternCategory: derived.patternCategory,
     riskTone,
+    discoveries: derived.discoveries, // <= concrete facts for the UI grid
+    entities,
+    signals: {
+      caution: derived.cautionSignals,
+      consistent: derived.consistencySignals,
+    },
+    evidence: derived.evidence, // exact quotes from the text
     userFriendly: {
       summary:
-        riskTone === "CAUTION"
-          ? "Some elements deserve a closer look. Use the checklist below to verify safely."
-          : riskTone === "REVIEW"
-          ? "There are a few things worth double-checking before you proceed."
-          : "Nothing obviously risky stands out, but a quick independent check is still smart.",
+        enrichedSummary ||
+        (riskTone === "CAUTION"
+          ? "Several elements stand out. Review the discoveries and confirm details using official sources."
+          : riskTone === "CONSISTENT"
+          ? "No obvious pressure or unusual asks detected. A quick independent confirmation is still recommended."
+          : "Some details are worth a closer look. See the discoveries and verification steps below."),
       whatToDoubleCheck: [
-        "Search for the company’s official website and compare domains and contact info.",
-        "If a payment or password update is requested, confirm through the official portal you normally use.",
-        "Avoid clicking links; instead, navigate manually to the known website.",
+        "Search for the company’s official website yourself and compare contacts/domains.",
+        "If asked to message a number/app, confirm that channel appears on the company’s official site.",
+        "For pay or contract terms, compare with typical ranges and official HR/onboarding procedures.",
       ],
       independentVerification: [
-        "Call the official phone number listed on the company’s website (not the message).",
-        "Log into your account by typing the official URL into your browser.",
-        "Look up recent alerts from your bank, the FTC, or BBB for similar wording.",
+        "Use a phone number or email listed on the official website (not the one in the message).",
+        "Type the official website URL manually to log in or contact support.",
+        "Look for recent advisories describing similar offers or wording.",
       ],
       helpfulTips: [
-        "Time pressure is a common tactic—take a moment to verify.",
-        "Never share MFA codes or passwords via email or text.",
-        "If in doubt, ask a teammate or manager to review with you.",
+        "High daily pay + immediate payouts are often used to attract quick responses.",
+        "Generic email domains or random-looking addresses deserve extra scrutiny.",
+        "If unsure, share the message with a colleague to get a second view.",
       ],
     },
+    meta: {
+      charCount: text.length,
+    },
   };
 }
 
-function sanitizeStep1(obj, incident) {
-  // Normalize shapes, arrays, and category
-  const safe = {
-    shouldAutoTrigger: !!obj.shouldAutoTrigger,
-    patternCategory: snapToCategory(obj.patternCategory),
-    highlights: toArray(obj.highlights),
-    entities: {
-      organizations: toArray(obj.entities?.organizations),
-      emailAddresses: toArray(obj.entities?.emailAddresses),
-      domains: toArray(obj.entities?.domains),
-      urls: toArray(obj.entities?.urls),
-      phoneNumbers: toArray(obj.entities?.phoneNumbers),
-      amounts: toArray(obj.entities?.amounts),
-      addresses: toArray(obj.entities?.addresses),
-    },
-    consistencySignals: toArray(obj.consistencySignals),
-    cautionSignals: toArray(obj.cautionSignals),
-    riskTone: ["CAUTION", "REVIEW", "CONSISTENT"].includes(obj.riskTone) ? obj.riskTone : "REVIEW",
-    userFriendly: {
-      summary: str(obj.userFriendly?.summary) || "Here’s a neutral summary of what stood out.",
-      whatToDoubleCheck: toArray(obj.userFriendly?.whatToDoubleCheck),
-      independentVerification: toArray(obj.userFriendly?.independentVerification),
-      helpfulTips: toArray(obj.userFriendly?.helpfulTips),
-    },
-    // We also include the original text length for context (not displayed)
-    meta: { charCount: incident.length },
+/* -------------------- Local extractors & signal derivation -------------------- */
+
+function extractEntities(text) {
+  const emails = unique((text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).map((s) => s.toLowerCase()));
+  const urls = unique(text.match(/\bhttps?:\/\/[^\s)]+/gi) || []);
+  const domains = unique([
+    ...emails.map((e) => e.split("@")[1]),
+    ...(text.match(/\b[a-z0-9-]+\.[a-z]{2,}\b/gi) || []),
+  ].map((d) => d.toLowerCase()));
+  const phones = unique((text.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g) || []).map(normalizePhone));
+  const whatsappPhones = unique(
+    (text.match(/whats ?app[:\s]?(\+?\d[\d\s().-]{7,}\d)/i) || [])[1]
+      ? [normalizePhone((text.match(/whats ?app[:\s]?(\+?\d[\d\s().-]{7,}\d)/i) || [])[1])]
+      : []
+  );
+
+  // amounts and ranges
+  const money = unique(text.match(/\$[\d,]+(?:\.\d{2})?|\b\d{2,3}k\b/gi) || []);
+  const ages = unique((text.match(/\b(at\s+least\s+)?(\d{2})\s*(?:\+|years?\s*old)\b/gi) || []).map(sanitizeSpaces));
+
+  const companies = unique(
+    // crude capture of likely company tokens (e.g., DSL). Also catch ALLCAPS as company-like.
+    (text.match(/\b[A-Z]{2,}(?:\s+[A-Z]{2,})*\b/g) || []).filter((x) => x.length >= 2 && x.length <= 30)
+  );
+
+  // brand mentions (case-insensitive)
+  const brands = unique(
+    WELL_KNOWN_BRANDS.filter((b) => new RegExp(`\\b${escapeRegex(b)}\\b`, "i").test(text))
+  );
+
+  return {
+    emailAddresses: emails,
+    domains,
+    urls,
+    phoneNumbers: phones,
+    whatsappNumbers: whatsappPhones,
+    amounts: money,
+    ages,
+    brands,
+    companies,
   };
-  return safe;
 }
 
-/* ----------------------------- STEP 2 ---------------------------------- */
+function deriveSignals(text, entities) {
+  const discoveries = [];
+  const evidence = [];
 
-async function runDeepResearch(incident, step1) {
+  // Sender email
+  if (entities.emailAddresses.length) {
+    const sender = entities.emailAddresses[0];
+    const [local, dom] = sender.split("@");
+    const { tld, sld } = splitDomain(dom);
+    const localDigitsFrac = (local.replace(/\D/g, "").length || 0) / Math.max(local.length, 1);
+    const localLooksRandom = localDigitsFrac >= 0.3 || /[a-z]{2,}\d{3,}/i.test(local);
+    const entropy = shannonEntropy(sld);
+
+    discoveries.push(
+      { label: "Sender email", value: sender },
+      { label: "Email domain", value: dom, badge: tld ? `.${tld}` : undefined },
+      { label: "Domain entropy", value: entropy.toFixed(2), note: entropyNote(entropy) },
+    );
+    if (RISK_TLDS.has(tld)) {
+      discoveries.push({ label: "TLD trait", value: `.${tld}`, note: "Low-cost/generic TLD — verify ownership" });
+    }
+    if (localLooksRandom) {
+      discoveries.push({ label: "Local-part pattern", value: local, note: "Random-looking address (many digits)" });
+    }
+    evidence.push({ type: "contact", quote: sender });
+  }
+
+  // WhatsApp / phone
+  if (entities.whatsappNumbers.length) {
+    entities.whatsappNumbers.forEach((n) => {
+      const area = areaHint(n);
+      discoveries.push({ label: "WhatsApp contact", value: n, note: area ? `Appears from ${area}` : undefined });
+      evidence.push({ type: "contact", quote: `WhatsApp:${n}` });
+    });
+  } else if (entities.phoneNumbers.length) {
+    entities.phoneNumbers.forEach((n) => {
+      const area = areaHint(n);
+      discoveries.push({ label: "Phone number", value: n, note: area ? `Appears from ${area}` : undefined });
+      evidence.push({ type: "contact", quote: n });
+    });
+  }
+
+  // Payout timing & amounts
+  const payoutImmediate = /\b(same[- ]?day|immediate(?:ly)?|instan(t|tly)|on the same day)\b/i.test(text);
+  if (payoutImmediate) {
+    discoveries.push({ label: "Payout timing", value: "Same-day / immediate", note: "Unusual for most employers" });
+    evidence.push({ type: "claim", quote: pullQuote(text, /(same[- ]?day|immediate(?:ly)?|instan(?:t|t)ly)/i) });
+  }
+
+  // Daily pay range detection
+  const dailyPayMatch = text.match(/\$?(\d{2,5})(?:\s?–\s?|\s?to\s?|\s?-\s?)\$?(\d{2,5})\s*(?:per\s*day|daily|\/day)?/i);
+  if (dailyPayMatch) {
+    const min = Number(dailyPayMatch[1].replace(/,/g, ""));
+    const max = Number(dailyPayMatch[2].replace(/,/g, ""));
+    discoveries.push({ label: "Daily pay (claimed)", value: `$${min.toLocaleString()} – $${max.toLocaleString()}` });
+    evidence.push({ type: "claim", quote: pullQuote(text, dailyPayMatch[0]) });
+  } else {
+    // If separate amounts present, still note first two unique values
+    if (entities.amounts.length) {
+      discoveries.push({ label: "Amounts mentioned", value: entities.amounts.slice(0, 3).join(", ") });
+      entities.amounts.slice(0, 2).forEach((m) => evidence.push({ type: "claim", quote: m }));
+    }
+  }
+
+  // Age requirement
+  const ageMatch = text.match(/\b(?:at\s*least\s*)?(\d{2})\s*(?:\+|years?\s*old)\b/i);
+  if (ageMatch) {
+    discoveries.push({ label: "Age requirement", value: `${ageMatch[1]}+` });
+    evidence.push({ type: "policy", quote: pullQuote(text, ageMatch[0]) });
+  }
+
+  // Brand & company mentions
+  if (entities.brands.length) {
+    discoveries.push({ label: "Brands mentioned", value: entities.brands.join(", ") });
+    entities.brands.forEach((b) => evidence.push({ type: "brand", quote: pullQuote(text, new RegExp(`\\b${escapeRegex(b)}\\b`, "i")) }));
+  }
+  if (entities.companies.length) {
+    // highlight short, company-like tokens (e.g., “DSL”)
+    const likelyCos = entities.companies.filter((c) => c.length <= 6);
+    if (likelyCos.length) {
+      discoveries.push({ label: "Company tokens", value: unique(likelyCos).join(", ") });
+      likelyCos.forEach((c) => evidence.push({ type: "company", quote: c }));
+    }
+  }
+
+  // Domain ↔ brand mismatch
+  const mentions = [...entities.brands.map((b) => b.toLowerCase()), ...entities.companies.map((c) => c.toLowerCase())];
+  const brandToken = mentions.find((m) => m.length >= 3);
+  const mismatchDomains = entities.domains.filter((d) => brandToken && !d.includes(brandToken.replace(/\s+/g, "")));
+  if (brandToken && mismatchDomains.length) {
+    discoveries.push({
+      label: "Domain ↔ brand",
+      value: "Appears unrelated",
+      note: `Brand/company token “${brandToken}” not present in domain(s)`,
+    });
+  }
+
+  // Caution & consistency signals
+  const cautionSignals = [];
+  const consistencySignals = [];
+  if (entities.emailAddresses.length && entities.domains.length) {
+    const dom = entities.domains[0];
+    const { tld, sld } = splitDomain(dom);
+    if (RISK_TLDS.has(tld)) cautionSignals.push(`Domain uses .${tld} (generic/low-cost TLD). Confirm ownership on the official site.`);
+    if (shannonEntropy(sld) >= 3.1) cautionSignals.push("Domain label looks random/high-entropy. Verify it belongs to the claimed organization.");
+  }
+  if (payoutImmediate) cautionSignals.push("Same-day or instant payouts are uncommon for new contractors.");
+  if (entities.whatsappNumbers.length) cautionSignals.push("Recruitment via WhatsApp is uncommon for established employers. Check the official careers page.");
+  if (mentions.includes("temu".toLowerCase())) cautionSignals.push("Well-known brand mentioned — check if this relationship appears on the brand’s official channels.");
+  if (/training/i.test(text)) consistencySignals.push("Training is mentioned (legitimate roles often provide training).");
+  if (/part[- ]?time|flexible/i.test(text)) consistencySignals.push("Part-time/flexible schedule described (not inherently unusual).");
+
+  // Category guess
+  const patternCategory = (CATEGORY_HINTS.find((h) => h.rx.test(text))?.cat) || "Other / Needs Review";
+
+  return { discoveries, evidence, cautionSignals, consistencySignals, patternCategory };
+}
+
+/* ---------------------------------- STEP 2: Neutral research ---------------------------------- */
+
+async function deepResearchNeutral(text, step1) {
   const hasPplx = !!process.env.PERPLEXITY_API_KEY;
   let detailedFindings = "";
-  let bullets = [];
   let sources = [];
-  let consistencySignals = [];
-  let cautionSignals = [];
+  let keyTakeaways = [];
 
   if (hasPplx) {
     try {
-      const queries = [
-        `Identify official website(s), corporate registry or BBB entry related to names/domains in: """${incident}"""`,
-        `Check if any domains/emails from the text appear on warning lists or have reputation issues: """${incident}"""`,
-        `Verify addresses (virtual office vs. physical) and phone numbers; note mismatches: """${incident}"""`,
-        `Find recent advisories describing similar wording/tactics (banks, FTC, IRS, vendor/BEC): """${incident}"""`,
-        `Assess plausibility of any amounts/timelines claimed; note typical legitimate timelines: """${incident}"""`,
-      ];
-
       const r = await fetch(PPLX_URL, {
         method: "POST",
         headers: {
@@ -317,128 +342,157 @@ async function runDeepResearch(incident, step1) {
             {
               role: "system",
               content:
-                "You are a neutral research assistant. Provide concise, sourced facts. Avoid judgments. Use bullet points.",
+                "You are a neutral research assistant. Provide concise, sourced facts. Avoid verdicts. Use bullets.",
             },
             {
               role: "user",
               content:
-                "Run the following checks and respond with short bullet points grouped by check. Include source links inline when possible.\n" +
-                queries.map((q, i) => `${i + 1}. ${q}`).join("\n"),
+                "Given the following message, look up: 1) official site/corporate registry/BBB references for any company tokens, 2) whether the domains/emails appear on warning lists, 3) whether the phone numbers are published as official contacts, 4) advisories that match the wording. Keep it short, with links.\n\nMessage:\n" +
+                text,
             },
           ],
         }),
       });
-
       const data = await r.json();
       detailedFindings = data?.choices?.[0]?.message?.content || "";
 
-      // Parse simple bullet lines and links
-      bullets = (detailedFindings.match(/^[-*•]\s.+$/gmi) || []).map((s) => s.replace(/^[-*•]\s/, "").trim());
+      // Parse bullets & links
+      keyTakeaways = (detailedFindings.match(/^[-*•]\s.+$/gmi) || []).map((s) => s.replace(/^[-*•]\s/, "").trim());
       sources = (detailedFindings.match(/\bhttps?:\/\/\S+/gi) || []).slice(0, 12);
-
-      // Derive neutral signals
-      if (/\b(official site|state registry|incorporated|bbb (?:rating|profile))\b/i.test(detailedFindings)) {
-        consistencySignals.push("Found official references (e.g., corporate registry / BBB). Review carefully.");
-      }
-      if (/\b(virtual office|whois privacy|mismatch|unrelated domain|reputation issue|warning)\b/i.test(detailedFindings)) {
-        cautionSignals.push("Some details may not align (e.g., domain/address mismatch or prior warnings).");
-      }
-      if (/\b(typical timeline|usual|normally takes)\b/i.test(detailedFindings)) {
-        consistencySignals.push("Typical timelines referenced for similar requests.");
-      }
     } catch {
-      // fall through to offline
+      // ignore—fallback below
     }
   }
 
-  // Offline fallback
   if (!detailedFindings) {
-    const emails = toArray(step1?.entities?.emailAddresses).slice(0, 5);
-    const domains = toArray(step1?.entities?.domains).slice(0, 5);
-    const phones = toArray(step1?.entities?.phoneNumbers).slice(0, 5);
-
-    bullets = [
-      "Performed offline checks (no live web research available).",
-      emails.length ? `Emails mentioned: ${emails.join(", ")}` : "No emails detected in the text.",
-      domains.length ? `Domains mentioned: ${domains.join(", ")}` : "No domains detected in the text.",
-      phones.length ? `Phone numbers mentioned: ${phones.join(", ")}` : "No phone numbers detected in the text.",
-      "Next step: compare the contact details above with those shown on the official company website you find yourself.",
+    // Offline fallback: report what we can prove from the text itself
+    const emails = step1?.entities?.emailAddresses?.slice(0, 1) || [];
+    const doms = step1?.entities?.domains?.slice(0, 2) || [];
+    const phones = (step1?.entities?.whatsappNumbers?.length ? step1.entities.whatsappNumbers : step1?.entities?.phoneNumbers || []).slice(0, 2);
+    keyTakeaways = [
+      emails.length ? `Sender email captured: ${emails[0]}` : "No sender email captured.",
+      doms.length ? `Domain(s) captured: ${doms.join(", ")}` : "No domains captured.",
+      phones.length ? `Contact number(s) captured: ${phones.join(", ")}` : "No phone numbers captured.",
+      "For independent confirmation, compare the contacts above with those listed on the company’s official website.",
     ];
-    sources = [
-      "https://www.bbb.org/",
-      "https://reportfraud.ftc.gov/",
-      "https://haveibeenpwned.com/",
-    ];
+    sources = ["https://www.bbb.org/", "https://reportfraud.ftc.gov/"];
     detailedFindings =
-      "Offline-only fallback executed. No live web results available in this environment.\n" +
-      bullets.map((b) => `- ${b}`).join("\n");
-    cautionSignals.push("Independent confirmation is recommended before proceeding.");
+      "No live web lookups performed. The following items were extracted directly from the message:\n" +
+      keyTakeaways.map((k) => `- ${k}`).join("\n");
   }
 
-  // Build user-friendly section
-  const userFriendly = {
-    overview:
-      "We looked for official references, mismatches, and recent advisories that match the wording or claims.",
-    keyTakeaways: [
-      ...cautionSignals.slice(0, 3),
-      ...consistencySignals.slice(0, 3),
-    ],
-    whatToDoNext: [
-      "Use the company’s official website (found via your own search) to confirm contacts and requests.",
-      "If money or passwords are involved, confirm by calling a phone number listed on the official site.",
-      "Proceed only after you can independently confirm key details.",
-    ],
-    officialSources: sources.slice(0, 10),
-  };
+  const status = keyTakeaways.some((k) => /warning|mismatch|unrelated|flag/i.test(k))
+    ? "NEEDS_CONFIRMATION"
+    : keyTakeaways.some((k) => /official|registry|bbb/i.test(k))
+    ? "MIXED_SIGNALS"
+    : "RESEARCH_COMPLETED";
 
   return {
     researchConducted: true,
-    userFriendly,
+    verificationStatus: status,
+    userFriendly: {
+      overview: "We looked for official references, contact alignment, and recent advisories matching the wording.",
+      keyTakeaways: keyTakeaways.slice(0, 10),
+      whatToDoNext: [
+        "Find the company’s official site and confirm whether this contact method (email/WhatsApp/number) appears there.",
+        "If pay or credentials are requested, confirm with the HR or support contact listed on the official site.",
+      ],
+      officialSources: sources.slice(0, 10),
+    },
     detailedFindings,
-    // Keep a neutral status for UI styling, not a verdict
-    verificationStatus: deriveNeutralStatus({ cautionSignals, consistencySignals }),
   };
 }
 
-function deriveNeutralStatus({ cautionSignals, consistencySignals }) {
-  if (cautionSignals.length && !consistencySignals.length) return "NEEDS_CONFIRMATION";
-  if (cautionSignals.length && consistencySignals.length) return "MIXED_SIGNALS";
-  if (!cautionSignals.length && consistencySignals.length) return "APPEARS_CONSISTENT";
-  return "RESEARCH_COMPLETED";
+/* ---------------------------------- Optional Anthropic phrasing ---------------------------------- */
+
+async function claudeNeutralSummary(text, entities, derived) {
+  const prompt = [
+    "You are an investigation assistant.",
+    "Write ONE neutral sentence summarizing what the person received.",
+    "Do not say 'scam' or 'legit'. Focus on what is offered/asked and the channels involved.",
+    "Example: “You received a part-time job pitch that offers same-day payouts and asks you to respond via WhatsApp.”",
+    "Text:\n" + text,
+  ].join("\n");
+
+  const r = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 120,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  const data = await r.json();
+  return (data?.content?.[0]?.text || "").trim();
 }
 
-/* ----------------------------- Utilities -------------------------------- */
+/* ---------------------------------- Utils ---------------------------------- */
 
-function tryParseJson(s) {
-  try {
-    const start = s.indexOf("{");
-    const end = s.lastIndexOf("}");
-    if (start === -1 || end === -1) return null;
-    return JSON.parse(s.slice(start, end + 1));
-  } catch {
-    return null;
+function unique(arr) { return [...new Set(arr)]; }
+
+function splitDomain(domain) {
+  const parts = domain.split(".");
+  if (parts.length < 2) return { sld: domain, tld: "" };
+  const tld = parts.pop().toLowerCase();
+  const sld = parts.pop().toLowerCase();
+  return { sld, tld };
+}
+
+function shannonEntropy(s) {
+  if (!s) return 0;
+  const freq = {};
+  for (const ch of s.toLowerCase()) freq[ch] = (freq[ch] || 0) + 1;
+  const len = s.length;
+  let H = 0;
+  for (const k in freq) {
+    const p = freq[k] / len;
+    H += -p * Math.log2(p);
   }
+  return H;
 }
 
-function toArray(v) {
-  if (!v) return [];
-  if (Array.isArray(v)) return v.filter(Boolean);
-  return [v].filter(Boolean);
+function entropyNote(H) {
+  if (H >= 3.5) return "Very high randomness";
+  if (H >= 3.1) return "High randomness";
+  if (H >= 2.6) return "Moderate randomness";
+  return "Low randomness";
 }
 
-function toUnique(arr) {
-  return [...new Set(arr)];
+function normalizePhone(s) {
+  return s.replace(/[^\d+]/g, "").replace(/^00/, "+").replace(/^1(\d{10})$/, "+1$1");
 }
 
-function str(v) {
-  return typeof v === "string" ? v : "";
+function areaHint(e164) {
+  // Only attempt for +1 numbers with 10 digits
+  const m = e164.match(/^\+?1(\d{10})$/);
+  if (!m) return null;
+  const n = m[1];
+  const area = n.substring(0, 3);
+  return AREA_MAP[area] || null;
 }
 
-function snapToCategory(c) {
-  if (!c || typeof c !== "string") return "Other / Needs Review";
-  const exact = PATTERN_CATEGORIES.find((x) => x.toLowerCase() === c.toLowerCase());
-  if (exact) return exact;
-  // fuzzy
-  const hint = CATEGORY_HINTS.find((h) => h.cat.toLowerCase() === c.toLowerCase());
-  return hint ? hint.cat : "Other / Needs Review";
+function sanitizeSpaces(s) { return s.replace(/\s+/g, " ").trim(); }
+
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function pullQuote(text, patternOrStr) {
+  let m, str;
+  if (patternOrStr instanceof RegExp) {
+    m = text.match(patternOrStr);
+    str = m ? m[0] : null;
+  } else {
+    str = patternOrStr;
+  }
+  if (!str) return null;
+  // return a tight quote (trim ~5 chars padding on each side)
+  const idx = text.indexOf(str);
+  if (idx === -1) return str;
+  const start = Math.max(0, idx - 5);
+  const end = Math.min(text.length, idx + str.length + 5);
+  return text.slice(start, end).replace(/\s+/g, " ").trim();
 }
