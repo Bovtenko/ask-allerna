@@ -1,4 +1,4 @@
-// pages/api/analyze.js - Complete Fixed Version with Accurate Research Processing
+// pages/api/analyze.js - Complete Working Version
 
 // API Configuration
 const API_CONFIG = {
@@ -264,6 +264,7 @@ function transformToUserFriendly(analysis) {
     'Romance/relationship scams': 'Romance Scam',
     'Survey/prize/lottery bait': 'Fake Prize or Survey',
     'Supply-chain/partner impersonation & fake integrations/API keys': 'Business Partner Impersonation',
+    'Funding offers & grants': 'Funding or Grant Scam',
     // Add more mappings as needed
   };
 
@@ -298,7 +299,8 @@ function determineRiskLevel(analysis) {
   const mediumRiskCategories = [
     'Recruitment/job-offer scams',
     'Tech support/helpdesk impersonation & quid-pro-quo',
-    'Account/Service alerts & reverification/billing'
+    'Account/Service alerts & reverification/billing',
+    'Funding offers & grants'
   ];
 
   if (highRiskCategories.includes(analysis.scamCategory)) {
@@ -332,7 +334,8 @@ function shouldAutoTriggerResearch(analysis) {
     'Tech support/helpdesk impersonation & quid-pro-quo',
     'Investment/crypto scams',
     'Supply-chain/partner impersonation & fake integrations/API keys',
-    'Account/Service alerts & reverification/billing'
+    'Account/Service alerts & reverification/billing',
+    'Funding offers & grants'
   ];
 
   if (highImpactCategories.includes(analysis.scamCategory)) {
@@ -509,35 +512,92 @@ Provide current trends and official warnings.`
   return queries;
 }
 
+// Format research results with accurate processing
+async function formatResearchResults(step1Results, researchResults) {
+  try {
+    const combinedFindings = researchResults.map(r => `
+=== ${r.description} ===
+${r.results}
+`).join('\n');
+
+    // Extract actual fraud alerts (not general threat intel)
+    const actualFraudAlerts = extractFraudAlerts(researchResults, step1Results);
+    
+    // Determine if business is legitimate based on research
+    const businessLegitimacy = determineBusinessLegitimacy(researchResults);
+
+    return {
+      researchConducted: true,
+      businessVerification: {
+        organizationsResearched: step1Results.entitiesDetected?.organizations || [],
+        legitimacyStatus: businessLegitimacy,
+        officialContacts: extractOfficialContacts(researchResults),
+        fraudAlerts: actualFraudAlerts
+      },
+      contactAnalysis: {
+        contactsAnalyzed: step1Results.entitiesDetected?.contacts || [],
+        riskAssessment: assessContactRisk(researchResults),
+        comparisonFindings: extractComparisonFindings(researchResults)
+      },
+      threatIntelligence: {
+        currentTrends: ["General threat patterns for this category researched"],
+        officialWarnings: ["Industry warnings checked"],
+        recentIncidents: ["Recent incident patterns analyzed"]
+      },
+      verificationGuidance: {
+        howToVerify: generateSpecificVerificationSteps(researchResults, step1Results),
+        officialChannels: extractOfficialChannels(researchResults)
+      },
+      investigationSummary: generateAccurateSummary(researchResults, step1Results),
+      detailedFindings: combinedFindings
+    };
+
+  } catch (error) {
+    console.error('[FORMAT-RESEARCH] Error:', error);
+    return {
+      researchConducted: true,
+      investigationSummary: 'Research completed with basic processing',
+      rawResults: researchResults.map(r => r.results).join('\n\n')
+    };
+  }
+}
+
 // FIXED: Extract fraud alerts from research - Only specific alerts
-function extractFraudAlerts(researchResults) {
+function extractFraudAlerts(researchResults, step1Results) {
   const alerts = [];
+  const entities = step1Results.entitiesDetected || {};
   
   researchResults.forEach(result => {
     const content = result.results.toLowerCase();
     
     // Only flag as fraud alert if SPECIFIC to this organization/contact
-    // NOT general threat intelligence about the category
-    
-    // Look for specific organization fraud alerts
-    if (content.includes('fraud alert') && 
-        (content.includes('attainable security') || 
-         content.includes('samuel van dalen') ||
-         content.includes('attainablesecuritysynergy.com'))) {
-      alerts.push("Specific fraud alert found for this organization");
+    // Check for specific organization fraud alerts
+    if (entities.organizations) {
+      entities.organizations.forEach(org => {
+        if (content.includes('fraud alert') && content.includes(org.toLowerCase())) {
+          alerts.push(`Specific fraud alert found for ${org}`);
+        }
+        if (content.includes('scam warning') && content.includes(org.toLowerCase())) {
+          alerts.push(`Scam warning found for ${org}`);
+        }
+        if (content.includes('better business bureau') && 
+            content.includes('complaint') && 
+            content.includes(org.toLowerCase())) {
+          alerts.push(`BBB complaints found for ${org}`);
+        }
+      });
     }
     
-    // Look for domain-specific warnings
-    if (content.includes('scam warning') && 
-        content.includes('attainablesecuritysynergy.com')) {
-      alerts.push("Domain-specific scam warning found");
-    }
-    
-    // Look for BBB complaints or specific business warnings
-    if (content.includes('better business bureau') && 
-        content.includes('complaint') &&
-        content.includes('attainable security')) {
-      alerts.push("BBB complaints found for this business");
+    // Check for domain-specific warnings
+    if (entities.contacts) {
+      entities.contacts.forEach(contact => {
+        if (content.includes('scam warning') && content.includes(contact.toLowerCase())) {
+          alerts.push(`Domain-specific warning found for ${contact}`);
+        }
+        if (content.includes('blacklisted') && content.includes(contact.toLowerCase())) {
+          alerts.push(`Contact method ${contact} appears on blacklists`);
+        }
+      });
     }
   });
   
@@ -545,8 +605,8 @@ function extractFraudAlerts(researchResults) {
 }
 
 // FIXED: Generate verification status - Only flag real fraud alerts
-function generateVerificationStatus(researchResults) {
-  const actualFraudAlerts = extractFraudAlerts(researchResults);
+function generateVerificationStatus(researchResults, step1Results) {
+  const actualFraudAlerts = extractFraudAlerts(researchResults, step1Results);
   
   // Only return FRAUD_ALERTS_FOUND if we have SPECIFIC alerts
   if (actualFraudAlerts.some(alert => !alert.includes('No specific fraud alerts'))) {
@@ -604,20 +664,22 @@ function extractKeyFindings(researchResults) {
       if (content.includes('domain verification') || content.includes('legitimate domain')) {
         findings.push('Email domain appears to be controlled by the organization');
       }
+      if (content.includes('redirect') || content.includes('points to')) {
+        findings.push('Domain behavior analyzed');
+      }
     }
   });
   
-  // Only mention threat intelligence if it's specifically relevant
+  // Only mention threat intelligence if no specific findings
   const threatIntel = researchResults.find(r => r.category === 'threat_intelligence');
   if (threatIntel && findings.length === 0) {
-    findings.push('General supply-chain scam activity detected in this category');
+    findings.push('General threat patterns researched for this category');
   }
   
   return findings.slice(0, 3);
 }
 
 // Helper functions for more accurate analysis
-
 function determineBusinessLegitimacy(researchResults) {
   const businessResearch = researchResults.find(r => r.category === 'business_verification');
   if (!businessResearch) return 'unknown';
@@ -730,7 +792,7 @@ function extractOfficialChannels(researchResults) {
 
 function generateAccurateSummary(researchResults, step1Results) {
   const businessResearch = researchResults.find(r => r.category === 'business_verification');
-  const actualAlerts = extractFraudAlerts(researchResults);
+  const actualAlerts = extractFraudAlerts(researchResults, step1Results);
   
   if (actualAlerts.some(alert => !alert.includes('No specific fraud alerts'))) {
     return `Research found specific fraud alerts for ${step1Results.scamCategory}. Exercise caution.`;
@@ -743,107 +805,95 @@ function generateAccurateSummary(researchResults, step1Results) {
   return `Research completed for ${step1Results.scamCategory}. No specific fraud alerts found, but general category vigilance recommended.`;
 }
 
-// FIXED: Format research results with accurate processing
-async function formatResearchResults(step1Results, researchResults) {
+// Transform research results to user-friendly format - FIXED
+function transformResearchToUserFriendly(researchResults) {
+  if (!researchResults || !researchResults.researchConducted) {
+    return researchResults;
+  }
+
+  // The research results come in as an object with structured data
+  // We need to safely extract the verification status and findings
+  
+  let verificationStatus = 'RESEARCH_COMPLETED';
+  let keyFindings = [];
+  let recommendedActions = [];
+  let officialSources = [];
+
   try {
-    const combinedFindings = researchResults.map(r => `
-=== ${r.description} ===
-${r.results}
-`).join('\n');
+    // Check if we have business verification results
+    if (researchResults.businessVerification) {
+      // Check for fraud alerts
+      if (researchResults.businessVerification.fraudAlerts && 
+          researchResults.businessVerification.fraudAlerts.some(alert => 
+            !alert.includes('No specific fraud alerts'))) {
+        verificationStatus = 'FRAUD_ALERTS_FOUND';
+        keyFindings.push('Fraud alerts found for this organization');
+        recommendedActions = [
+          "⚠️ Do not respond - fraud alerts found for this organization",
+          "🚨 Report this to the FTC",
+          "🗑️ Delete the message immediately"
+        ];
+      } else if (researchResults.businessVerification.legitimacyStatus === 'verified_legitimate' ||
+                 researchResults.businessVerification.legitimacyStatus === 'appears_legitimate') {
+        verificationStatus = 'VERIFIED_LEGITIMATE';
+        keyFindings.push('Business appears to have legitimate web presence');
+        recommendedActions = [
+          "✅ Organization appears legitimate - verify through official channels",
+          "📞 Contact through official website if interested",
+          "🔍 Still verify identity before sharing sensitive information"
+        ];
+      }
+    }
 
-    // Extract actual fraud alerts (not general threat intel)
-    const actualFraudAlerts = extractFraudAlerts(researchResults);
-    
-    // Determine if business is legitimate based on research
-    const businessLegitimacy = determineBusinessLegitimacy(researchResults);
+    // Extract official sources safely
+    if (researchResults.businessVerification?.officialContacts) {
+      officialSources.push(...researchResults.businessVerification.officialContacts.slice(0, 2));
+    }
+    if (researchResults.verificationGuidance?.officialChannels) {
+      officialSources.push(...researchResults.verificationGuidance.officialChannels.slice(0, 2));
+    }
+    if (officialSources.length === 0) {
+      officialSources = ["Official business website", "Verified phone directories"];
+    }
 
-    return {
-      researchConducted: true,
-      businessVerification: {
-        organizationsResearched: step1Results.entitiesDetected?.organizations || [],
-        legitimacyStatus: businessLegitimacy,
-        officialContacts: extractOfficialContacts(researchResults),
-        fraudAlerts: actualFraudAlerts
-      },
-      contactAnalysis: {
-        contactsAnalyzed: step1Results.entitiesDetected?.contacts || [],
-        riskAssessment: assessContactRisk(researchResults),
-        comparisonFindings: extractComparisonFindings(researchResults)
-      },
-      threatIntelligence: {
-        currentTrends: ["General threat patterns for this category researched"],
-        officialWarnings: ["Industry warnings checked"],
-        recentIncidents: ["Recent incident patterns analyzed"]
-      },
-      verificationGuidance: {
-        howToVerify: generateSpecificVerificationSteps(researchResults, step1Results),
-        officialChannels: extractOfficialChannels(researchResults)
-      },
-      investigationSummary: generateAccurateSummary(researchResults, step1Results),
-      detailedFindings: combinedFindings
-    };
+    // Default actions if none set yet
+    if (recommendedActions.length === 0) {
+      recommendedActions = [
+        "🔍 Continue verification through official channels",
+        "📞 Contact the organization directly using official phone numbers",
+        "⚠️ Do not share sensitive information until verified"
+      ];
+    }
+
+    // Add general findings if none found
+    if (keyFindings.length === 0) {
+      keyFindings.push('Research completed successfully');
+      if (researchResults.investigationSummary) {
+        keyFindings.push('Additional verification information gathered');
+      }
+    }
 
   } catch (error) {
-    console.error('[FORMAT-RESEARCH] Error:', error);
-    return {
-      researchConducted: true,
-      investigationSummary: 'Research completed with basic processing',
-      rawResults: researchResults.map(r => r.results).join('\n\n')
-    };
-  }
-}
-
-// Transform research results to user-friendly format
-function transformResearchToUserFriendly(researchResults) {
-  if (!researchResults.researchConducted) {
-    return researchResults;
+    console.error('[TRANSFORM-RESEARCH] Error processing results:', error);
+    
+    // Fallback to safe defaults
+    verificationStatus = 'RESEARCH_COMPLETED';
+    keyFindings = ['Research completed with limited processing'];
+    recommendedActions = [
+      "🔍 Verify through official channels",
+      "📞 Contact organization directly",
+      "⚠️ Exercise caution until verified"
+    ];
+    officialSources = ["Official business website", "Verified directories"];
   }
 
   return {
     ...researchResults,
     userFriendly: {
-      verificationStatus: generateVerificationStatus(researchResults),
-      keyFindings: extractKeyFindings(researchResults),
-      officialSources: extractOfficialSources(researchResults),
-      recommendedActions: generateResearchActions(researchResults)
+      verificationStatus: verificationStatus,
+      keyFindings: keyFindings.slice(0, 3),
+      officialSources: officialSources.slice(0, 3),
+      recommendedActions: recommendedActions.slice(0, 3)
     }
   };
-}
-
-// Extract official sources
-function extractOfficialSources(researchResults) {
-  const sources = [];
-  
-  if (researchResults.businessVerification?.officialContacts) {
-    sources.push(...researchResults.businessVerification.officialContacts.slice(0, 2));
-  }
-  
-  if (researchResults.verificationGuidance?.officialChannels) {
-    sources.push(...researchResults.verificationGuidance.officialChannels.slice(0, 2));
-  }
-  
-  return sources.slice(0, 3); // Limit to top 3 sources
-}
-
-// Generate research-based actions
-function generateResearchActions(researchResults) {
-  const actions = [];
-  
-  const verificationStatus = generateVerificationStatus(researchResults);
-  
-  if (verificationStatus === 'FRAUD_ALERTS_FOUND') {
-    actions.push("⚠️ Do not respond - fraud alerts found for this organization");
-  } else if (verificationStatus === 'VERIFIED_LEGITIMATE') {
-    actions.push("✅ Organization appears legitimate - verify through official channels");
-  } else {
-    actions.push("🔍 Continue verification through official channels");
-  }
-  
-  if (researchResults.verificationGuidance?.howToVerify?.length > 0) {
-    actions.push(`✅ ${researchResults.verificationGuidance.howToVerify[0]}`);
-  }
-  
-  actions.push("📞 Contact the organization directly using official phone numbers");
-  
-  return actions.slice(0, 3);
 }
