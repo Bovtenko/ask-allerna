@@ -1,9 +1,9 @@
-// components/AskAllerna.js - Complete Latest Version
+// components/AskAllerna.js - Complete Overhaul for Research-First Logic
 
 import React, { useState, useEffect, useReducer, useCallback } from 'react';
-import { Shield, Send, Search, Clock, CheckCircle, AlertTriangle, RotateCcw, FileText, Eye, Flag, CheckSquare, Building, Users, TrendingUp, Copy, ExternalLink, Loader, X, AlertCircle, Info } from 'lucide-react';
+import { Shield, Send, Search, Clock, CheckCircle, AlertTriangle, RotateCcw, FileText, Eye, Flag, CheckSquare, Building, Users, TrendingUp, Copy, ExternalLink, Loader, X, AlertCircle, Info, Brain, Target, Zap } from 'lucide-react';
 
-// State management with useReducer
+// Updated state management for new data structure
 const initialState = {
   analysis: {
     step1: null,
@@ -53,7 +53,7 @@ function analysisReducer(state, action) {
       return {
         ...state,
         ui: { ...state.ui, isResearching: true },
-        researchStatus: action.payload || 'Starting verification...',
+        researchStatus: action.payload || 'Starting investigation...',
         researchProgress: 0
       };
     
@@ -70,7 +70,7 @@ function analysisReducer(state, action) {
         analysis: { ...state.analysis, step2: action.payload },
         ui: { ...state.ui, isResearching: false },
         researchProgress: 100,
-        researchStatus: 'Verification complete'
+        researchStatus: 'Investigation complete'
       };
     
     case 'SET_ERROR':
@@ -114,7 +114,7 @@ function analysisReducer(state, action) {
 const AskAllerna = () => {
   const [state, dispatch] = useReducer(analysisReducer, initialState);
 
-  // Main analysis function with improved error handling and progress
+  // Main analysis function with updated error handling
   const analyzeIncident = async () => {
     if (!state.input.trim()) return;
     
@@ -168,16 +168,16 @@ const AskAllerna = () => {
     }
   };
 
-  // Deep research function with progress tracking
+  // Deep research function with updated progress tracking
   const runDeepResearch = async (step1Results) => {
-    dispatch({ type: 'START_RESEARCH', payload: 'Starting verification...' });
+    dispatch({ type: 'START_RESEARCH', payload: 'Starting comprehensive investigation...' });
     
-    // Simulate research progress
+    // Updated research progress steps
     const progressSteps = [
-      { progress: 20, status: 'Checking business information...' },
-      { progress: 40, status: 'Verifying contact details...' },
-      { progress: 60, status: 'Searching scam databases...' },
-      { progress: 80, status: 'Gathering threat intelligence...' }
+      { progress: 20, status: 'Verifying sender identity...' },
+      { progress: 40, status: 'Checking contact methods...' },
+      { progress: 60, status: 'Analyzing threat patterns...' },
+      { progress: 80, status: 'Cross-referencing databases...' }
     ];
     
     progressSteps.forEach((step, index) => {
@@ -211,10 +211,10 @@ const AskAllerna = () => {
         throw new Error(errorData.userMessage || 'Research failed');
       }
     } catch (error) {
-      let userMessage = 'Unable to complete additional verification right now.';
+      let userMessage = 'Unable to complete investigation right now.';
       
       if (error.name === 'AbortError') {
-        userMessage = 'Verification took too long. The basic analysis is complete and reliable.';
+        userMessage = 'Investigation took too long. The basic analysis is complete and reliable.';
       } else if (error.message) {
         userMessage = error.message;
       }
@@ -232,7 +232,7 @@ const AskAllerna = () => {
     dispatch({ type: 'EXIT_ANALYSIS' });
   };
 
-  // Generate enhanced user-friendly report
+  // Generate enhanced user-friendly report with new structure
   const generateReport = () => {
     const timestamp = new Date().toLocaleString();
     const reportId = `ALR-${Date.now().toString().slice(-8)}`;
@@ -242,53 +242,58 @@ const AskAllerna = () => {
     let researchSection = '';
     if (research?.researchConducted && research?.userFriendly) {
       researchSection = `
-VERIFICATION RESULTS:
+INVESTIGATION RESULTS:
 Status: ${research.userFriendly.verificationStatus === 'HIGH_RISK_DETECTED' ? '⚠️ HIGH RISK DETECTED - Do not proceed' :
-  research.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' ? '✅ Business appears legitimate' :
-  research.userFriendly.verificationStatus === 'PARTIALLY_VERIFIED' ? '🔍 Partially verified - exercise caution' :
+  research.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' ? '✅ Communication appears legitimate' :
   research.userFriendly.verificationStatus === 'MODERATE_RISK_DETECTED' ? '⚠️ MODERATE RISK - Exercise extreme caution' :
-  '✓ Additional verification completed'}
+  research.userFriendly.verificationStatus === 'SOME_CONCERNS_DETECTED' ? '🔍 Some concerns detected - verify carefully' :
+  '✓ Investigation completed'}
 
-WHAT WE FOUND:
-${research.userFriendly.keyFindings?.map(finding => `• ${finding}`).join('\n') || 'Research completed successfully'}
+CRITICAL FINDINGS:
+${research.userFriendly.criticalFindings?.map(finding => `• ${finding}`).join('\n') || 'No critical issues detected'}
 
-VERIFICATION SUMMARY:
-${research.userFriendly.verificationSummary || 'Verification completed'}
+INVESTIGATION SUMMARY:
+${research.userFriendly.verificationSummary || 'Investigation completed successfully'}
 
-RECOMMENDED ACTIONS BASED ON RESEARCH:
+RECOMMENDED ACTIONS:
 ${research.userFriendly.recommendedActions?.map(action => `• ${action}`).join('\n') || 'Standard verification recommended'}
 
-HOW TO VERIFY INDEPENDENTLY:
+OFFICIAL VERIFICATION SOURCES:
 ${research.userFriendly.officialSources?.map(source => `• ${source}`).join('\n') || 'Use official channels'}`;
     }
 
-    const report = `ASK ALLERNA SCAM ANALYSIS REPORT
+    const report = `ASK ALLERNA COMMUNICATION ANALYSIS REPORT
 Generated: ${timestamp}
 Report ID: ${reportId}
 
 COMMUNICATION ANALYZED:
 ${state.input}
 
-ANALYSIS RESULTS:
-${analysis?.userFriendly?.summary || 'Analysis completed'}
+BEHAVIOR ANALYSIS:
+Communication Type: ${analysis?.userFriendly?.scamType || 'Unknown'}
+Risk Level: ${analysis?.userFriendly?.riskLevel || 'Unknown'}
+Summary: ${analysis?.userFriendly?.summary || 'Analysis completed'}
 
-SCAM TYPE: ${analysis?.userFriendly?.scamType || analysis?.scamCategory || 'Unknown'}
-RISK LEVEL: ${analysis?.userFriendly?.riskLevel || 'Unknown'}
+TACTICS OBSERVED:
+${analysis?.userFriendly?.tacticsObserved?.map(tactic => `• ${tactic}`).join('\n') || 'No specific tactics identified'}
 
-MAIN CONCERNS:
+REQUESTS MADE:
+${analysis?.userFriendly?.requestsMade?.map(request => `• ${request}`).join('\n') || 'No specific requests identified'}
+
+WARNING SIGNS:
 ${analysis?.userFriendly?.mainConcerns?.map(concern => `• ${concern}`).join('\n') || 'No specific concerns identified'}
 
 RECOMMENDED ACTIONS:
 ${analysis?.userFriendly?.nextSteps?.map(step => `• ${step}`).join('\n') || 'No specific actions recommended'}
 
-HOW TO VERIFY:
+VERIFICATION METHODS:
 ${analysis?.userFriendly?.howToCheck?.map(method => `• ${method}`).join('\n') || 'Contact through official channels'}
 
 ${researchSection}
 
 ---
-Always trust your instincts. If something feels wrong, it probably is.
-Report generated by Ask Allerna - AI-Powered Scam Detection`;
+Trust your instincts. If something feels suspicious, investigate further.
+Report generated by Ask Allerna - AI-Powered Communication Analysis`;
 
     dispatch({ type: 'SET_REPORT', payload: { text: report, show: true } });
   };
@@ -336,7 +341,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
             </div>
             
             <h1 className="text-5xl font-semibold text-gray-900 mb-4">Ask Allerna</h1>
-            <p className="text-xl text-gray-600 mb-8">Is This a Scam?</p>
+            <p className="text-xl text-gray-600 mb-8">Is This Communication Suspicious?</p>
             <p className="text-lg text-gray-600 max-w-lg mx-auto">
               Get instant analysis of suspicious emails, texts, calls, job offers, and other communications
             </p>
@@ -344,12 +349,12 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
 
           <div className="mb-8">
             <label className="block text-lg font-medium text-gray-900 mb-4">
-              What happened? Describe the suspicious communication:
+              Paste the suspicious communication or describe what happened:
             </label>
             <textarea
               value={state.input}
               onChange={(e) => dispatch({ type: 'SET_INPUT', payload: e.target.value })}
-              placeholder="For example: 'I got an email saying my Amazon account will be closed unless I click a link and verify my payment info' or 'Someone called claiming to be from Microsoft saying my computer has a virus'"
+              placeholder="For example, paste the email you received, or describe: 'I got a call from someone claiming to be from Microsoft saying my computer has a virus'"
               className="w-full h-48 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 transition-all duration-200"
             />
             
@@ -368,8 +373,8 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
               disabled={state.ui.isAnalyzing || !state.input.trim() || state.input.trim().length < 10}
               className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium text-lg py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
-              <Search className="w-5 h-5" />
-              <span>Check for Scams</span>
+              <Brain className="w-5 h-5" />
+              <span>Analyze Communication</span>
             </button>
             
             {state.input.trim().length > 0 && state.input.trim().length < 10 && (
@@ -384,18 +389,17 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
               <h3 className="text-lg font-medium text-blue-900 mb-2 flex items-center gap-2">
                 <span>🧠</span>
-                You Were Right to Check
+                Smart Detection
               </h3>
               <p className="text-blue-800">
-                Your instincts brought you here, and that's exactly right. When something feels suspicious, 
-                it's always smart to verify before taking any action.
+                Our AI analyzes communication patterns, verifies sender identity, and checks against current threat intelligence.
               </p>
             </div>
 
             <div className="bg-gray-50 border border-gray-100 rounded-lg p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-2 flex items-center gap-2">
                 <span>🔒</span>
-                Your Privacy Matters
+                Privacy Protected
               </h3>
               <p className="text-gray-700">
                 We analyze your communication securely and don't store your personal information.
@@ -425,7 +429,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                   className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 flex items-center gap-2"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  New Check
+                  New Analysis
                 </button>
                 <button 
                   onClick={exitAnalysis}
@@ -438,19 +442,18 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
 
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">What You Described</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-4">Communication Being Analyzed</h2>
                 
-                {/* Simple text display without highlighting */}
                 <textarea
                   value={state.input}
                   onChange={(e) => dispatch({ type: 'SET_INPUT', payload: e.target.value })}
-                  placeholder="Describe what happened..."
+                  placeholder="Paste the communication or describe what happened..."
                   className="w-full h-96 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900"
                 />
 
                 <div className="mt-4 bg-gray-50 border border-gray-100 rounded-lg p-4">
                   <div className="text-sm text-gray-600">
-                    Analysis in progress - no highlighting applied
+                    Analysis in progress - results will show patterns and behaviors detected
                   </div>
                 </div>
               </div>
@@ -477,10 +480,10 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Checking for Scams
+                  Analyzing Communication
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Analyzing patterns and warning signs...
+                  Detecting patterns, behaviors, and potential risks...
                 </p>
                 
                 {/* Progress bar */}
@@ -498,8 +501,8 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
             {state.ui.isResearching && (
               <div className="mb-6 border border-blue-100 bg-blue-50 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <Loader className="w-5 h-5 text-blue-600 animate-spin" />
-                  <h3 className="font-medium text-blue-900">Verifying Information</h3>
+                  <Target className="w-5 h-5 text-blue-600 animate-pulse" />
+                  <h3 className="font-medium text-blue-900">Conducting Investigation</h3>
                 </div>
                 <p className="text-blue-800 text-sm mb-3">{state.researchStatus}</p>
                 
@@ -514,7 +517,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
               </div>
             )}
 
-            {/* Analysis Results - User Friendly */}
+            {/* Analysis Results - Updated for New Structure */}
             {state.analysis.step1 && (
               <div className="space-y-6">
                 
@@ -524,7 +527,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                       <CheckCircle className="w-6 h-6 text-green-600" />
                       Analysis Complete
                     </h2>
-                    <p className="text-sm text-gray-600">Here's what we found</p>
+                    <p className="text-sm text-gray-600">Behavior and pattern analysis results</p>
                   </div>
                   <div className="flex gap-2">
                     {!state.analysis.step1.shouldAutoTrigger && !state.analysis.step2 && !state.ui.isResearching && (
@@ -533,7 +536,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-all duration-200"
                       >
                         <Search className="w-4 h-4" />
-                        Verify More
+                        Investigate
                       </button>
                     )}
                     <button 
@@ -546,7 +549,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                   </div>
                 </div>
 
-                {/* Main Results - User Friendly */}
+                {/* Main Results - Behavior-Based Analysis */}
                 {state.analysis.step1.userFriendly && (
                   <>
                     {/* Risk Level & Summary */}
@@ -562,17 +565,51 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                       </p>
                     </div>
 
-                    {/* Main Concerns */}
-                    {state.analysis.step1.userFriendly.mainConcerns.length > 0 && (
+                    {/* Tactics Observed */}
+                    {state.analysis.step1.userFriendly.tacticsObserved && state.analysis.step1.userFriendly.tacticsObserved.length > 0 && (
+                      <div className="border border-purple-100 bg-purple-50 rounded-lg p-4">
+                        <h3 className="font-medium text-purple-900 mb-3 flex items-center gap-2">
+                          <Zap className="w-4 h-4" />
+                          Tactics Detected
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {state.analysis.step1.userFriendly.tacticsObserved.map((tactic, index) => (
+                            <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                              {tactic.replace('_', ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Requests Made */}
+                    {state.analysis.step1.userFriendly.requestsMade && state.analysis.step1.userFriendly.requestsMade.length > 0 && (
                       <div className="border border-orange-100 bg-orange-50 rounded-lg p-4">
                         <h3 className="font-medium text-orange-900 mb-3 flex items-center gap-2">
+                          <Target className="w-4 h-4" />
+                          Information Requests
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {state.analysis.step1.userFriendly.requestsMade.map((request, index) => (
+                            <span key={index} className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                              {request.replace('_', ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Warning Signs */}
+                    {state.analysis.step1.userFriendly.mainConcerns && state.analysis.step1.userFriendly.mainConcerns.length > 0 && (
+                      <div className="border border-red-100 bg-red-50 rounded-lg p-4">
+                        <h3 className="font-medium text-red-900 mb-3 flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4" />
-                          Warning Signs We Found
+                          Warning Signs Detected
                         </h3>
                         <ul className="space-y-1 text-sm">
                           {state.analysis.step1.userFriendly.mainConcerns.map((concern, index) => (
-                            <li key={index} className="text-orange-800 flex items-start gap-2">
-                              <span className="w-1.5 h-1.5 bg-orange-600 rounded-full mt-2 flex-shrink-0"></span>
+                            <li key={index} className="text-red-800 flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-red-600 rounded-full mt-2 flex-shrink-0"></span>
                               {concern}
                             </li>
                           ))}
@@ -581,11 +618,11 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                     )}
 
                     {/* What to Do */}
-                    {state.analysis.step1.userFriendly.nextSteps.length > 0 && (
+                    {state.analysis.step1.userFriendly.nextSteps && state.analysis.step1.userFriendly.nextSteps.length > 0 && (
                       <div className="border border-green-100 bg-green-50 rounded-lg p-4">
                         <h3 className="font-medium text-green-900 mb-3 flex items-center gap-2">
                           <CheckSquare className="w-4 h-4" />
-                          What You Should Do
+                          Recommended Actions
                         </h3>
                         <ol className="space-y-2 text-sm">
                           {state.analysis.step1.userFriendly.nextSteps.map((step, index) => (
@@ -601,11 +638,11 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                     )}
 
                     {/* How to Verify */}
-                    {state.analysis.step1.userFriendly.howToCheck.length > 0 && (
+                    {state.analysis.step1.userFriendly.howToCheck && state.analysis.step1.userFriendly.howToCheck.length > 0 && (
                       <div className="border border-blue-100 bg-blue-50 rounded-lg p-4">
                         <h3 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
                           <Info className="w-4 h-4" />
-                          How to Double-Check
+                          Verification Methods
                         </h3>
                         <ul className="space-y-1 text-sm">
                           {state.analysis.step1.userFriendly.howToCheck.map((method, index) => (
@@ -620,32 +657,32 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                   </>
                 )}
 
-                {/* Enhanced Research Results - User Friendly */}
+                {/* Enhanced Research Results - Updated for New Structure */}
                 {state.analysis.step2 && state.analysis.step2.researchConducted && (
                   <div className="mt-8 space-y-6">
                     
                     <div className="border-t border-gray-200 pt-6">
                       <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 mb-2">
                         <Search className="w-6 h-6 text-blue-600" />
-                        Research Results
+                        Investigation Results
                       </h2>
-                      <p className="text-sm text-gray-600">Here's what we found through independent verification</p>
+                      <p className="text-sm text-gray-600">Comprehensive verification and threat intelligence</p>
                     </div>
 
                     {state.analysis.step2.userFriendly && (
                       <>
-                        {/* Enhanced Verification Status with Details */}
+                        {/* Enhanced Verification Status */}
                         <div className={`border rounded-lg p-4 ${
                           state.analysis.step2.userFriendly.verificationStatus === 'HIGH_RISK_DETECTED' ? 'border-red-200 bg-red-50' :
                           state.analysis.step2.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' ? 'border-green-200 bg-green-50' :
-                          state.analysis.step2.userFriendly.verificationStatus === 'PARTIALLY_VERIFIED' ? 'border-yellow-200 bg-yellow-50' :
+                          state.analysis.step2.userFriendly.verificationStatus === 'SOME_CONCERNS_DETECTED' ? 'border-yellow-200 bg-yellow-50' :
                           state.analysis.step2.userFriendly.verificationStatus === 'MODERATE_RISK_DETECTED' ? 'border-orange-200 bg-orange-50' :
                           'border-blue-200 bg-blue-50'
                         }`}>
                           <h3 className={`font-medium mb-3 flex items-center gap-2 ${
                             state.analysis.step2.userFriendly.verificationStatus === 'HIGH_RISK_DETECTED' ? 'text-red-900' :
                             state.analysis.step2.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' ? 'text-green-900' :
-                            state.analysis.step2.userFriendly.verificationStatus === 'PARTIALLY_VERIFIED' ? 'text-yellow-900' :
+                            state.analysis.step2.userFriendly.verificationStatus === 'SOME_CONCERNS_DETECTED' ? 'text-yellow-900' :
                             state.analysis.step2.userFriendly.verificationStatus === 'MODERATE_RISK_DETECTED' ? 'text-orange-900' :
                             'text-blue-900'
                           }`}>
@@ -658,13 +695,13 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                             {state.analysis.step2.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' && (
                               <>
                                 <CheckCircle className="w-5 h-5" />
-                                ✅ Business Verified as Legitimate
+                                ✅ Communication Verified Legitimate
                               </>
                             )}
-                            {state.analysis.step2.userFriendly.verificationStatus === 'PARTIALLY_VERIFIED' && (
+                            {state.analysis.step2.userFriendly.verificationStatus === 'SOME_CONCERNS_DETECTED' && (
                               <>
                                 <AlertCircle className="w-5 h-5" />
-                                🔍 Partially Verified
+                                🔍 Some Concerns Detected
                               </>
                             )}
                             {state.analysis.step2.userFriendly.verificationStatus === 'MODERATE_RISK_DETECTED' && (
@@ -673,59 +710,37 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                                 ⚠️ MODERATE RISK DETECTED
                               </>
                             )}
-                            {!['HIGH_RISK_DETECTED', 'VERIFIED_LEGITIMATE', 'PARTIALLY_VERIFIED', 'MODERATE_RISK_DETECTED'].includes(state.analysis.step2.userFriendly.verificationStatus) && (
+                            {!['HIGH_RISK_DETECTED', 'VERIFIED_LEGITIMATE', 'SOME_CONCERNS_DETECTED', 'MODERATE_RISK_DETECTED'].includes(state.analysis.step2.userFriendly.verificationStatus) && (
                               <>
                                 <Info className="w-5 h-5" />
-                                ✓ Research Completed
+                                ✓ Investigation Completed
                               </>
                             )}
                           </h3>
                           
-                          {/* Verification Summary */}
                           <p className={`text-sm mb-3 ${
                             state.analysis.step2.userFriendly.verificationStatus === 'HIGH_RISK_DETECTED' ? 'text-red-800' :
                             state.analysis.step2.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' ? 'text-green-800' :
-                            state.analysis.step2.userFriendly.verificationStatus === 'PARTIALLY_VERIFIED' ? 'text-yellow-800' :
+                            state.analysis.step2.userFriendly.verificationStatus === 'SOME_CONCERNS_DETECTED' ? 'text-yellow-800' :
                             state.analysis.step2.userFriendly.verificationStatus === 'MODERATE_RISK_DETECTED' ? 'text-orange-800' :
                             'text-blue-800'
                           }`}>
-                            {state.analysis.step2.userFriendly.verificationSummary || 'Verification completed'}
+                            {state.analysis.step2.userFriendly.verificationSummary || 'Investigation completed'}
                           </p>
-
-                          {/* Verification Details */}
-                          {state.analysis.step2.userFriendly.verificationDetails && 
-                           state.analysis.step2.userFriendly.verificationDetails.length > 0 && (
-                            <div className={`text-sm ${
-                              state.analysis.step2.userFriendly.verificationStatus === 'HIGH_RISK_DETECTED' ? 'text-red-700' :
-                              state.analysis.step2.userFriendly.verificationStatus === 'VERIFIED_LEGITIMATE' ? 'text-green-700' :
-                              state.analysis.step2.userFriendly.verificationStatus === 'PARTIALLY_VERIFIED' ? 'text-yellow-700' :
-                              state.analysis.step2.userFriendly.verificationStatus === 'MODERATE_RISK_DETECTED' ? 'text-orange-700' :
-                              'text-blue-700'
-                            }`}>
-                              <ul className="space-y-1">
-                                {state.analysis.step2.userFriendly.verificationDetails.map((detail, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <span className="w-1.5 h-1.5 bg-current rounded-full mt-2 flex-shrink-0"></span>
-                                    <span className="break-all">{detail}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
                         </div>
 
-                        {/* Specific Key Findings */}
-                        {state.analysis.step2.userFriendly.keyFindings && 
-                         state.analysis.step2.userFriendly.keyFindings.length > 0 && (
-                          <div className="border border-purple-100 bg-purple-50 rounded-lg p-4">
-                            <h3 className="font-medium text-purple-900 mb-3 flex items-center gap-2">
+                        {/* Critical Findings */}
+                        {state.analysis.step2.userFriendly.criticalFindings && 
+                         state.analysis.step2.userFriendly.criticalFindings.length > 0 && (
+                          <div className="border border-red-100 bg-red-50 rounded-lg p-4">
+                            <h3 className="font-medium text-red-900 mb-3 flex items-center gap-2">
                               <Flag className="w-4 h-4" />
-                              What We Found
+                              Critical Findings
                             </h3>
                             <ul className="space-y-2 text-sm">
-                              {state.analysis.step2.userFriendly.keyFindings.map((finding, index) => (
-                                <li key={index} className="text-purple-800 flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mt-2 flex-shrink-0"></span>
+                              {state.analysis.step2.userFriendly.criticalFindings.map((finding, index) => (
+                                <li key={index} className="text-red-800 flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-red-600 rounded-full mt-2 flex-shrink-0"></span>
                                   <span className="break-all">{finding}</span>
                                 </li>
                               ))}
@@ -733,7 +748,45 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                           </div>
                         )}
 
-                        {/* Enhanced Actions Based on Research */}
+                        {/* Risk Factors */}
+                        {state.analysis.step2.userFriendly.riskFactors && 
+                         state.analysis.step2.userFriendly.riskFactors.length > 0 && (
+                          <div className="border border-orange-100 bg-orange-50 rounded-lg p-4">
+                            <h3 className="font-medium text-orange-900 mb-3 flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4" />
+                              Risk Factors
+                            </h3>
+                            <ul className="space-y-2 text-sm">
+                              {state.analysis.step2.userFriendly.riskFactors.map((factor, index) => (
+                                <li key={index} className="text-orange-800 flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-orange-600 rounded-full mt-2 flex-shrink-0"></span>
+                                  <span className="break-all">{factor}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Legitimacy Indicators */}
+                        {state.analysis.step2.userFriendly.legitimacyIndicators && 
+                         state.analysis.step2.userFriendly.legitimacyIndicators.length > 0 && (
+                          <div className="border border-green-100 bg-green-50 rounded-lg p-4">
+                            <h3 className="font-medium text-green-900 mb-3 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4" />
+                              Legitimacy Indicators
+                            </h3>
+                            <ul className="space-y-2 text-sm">
+                              {state.analysis.step2.userFriendly.legitimacyIndicators.map((indicator, index) => (
+                                <li key={index} className="text-green-800 flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-green-600 rounded-full mt-2 flex-shrink-0"></span>
+                                  <span className="break-all">{indicator}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Investigation-Based Actions */}
                         {state.analysis.step2.userFriendly.recommendedActions && 
                          state.analysis.step2.userFriendly.recommendedActions.length > 0 && (
                           <div className={`border rounded-lg p-4 ${
@@ -747,7 +800,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                               'text-green-900'
                             }`}>
                               <CheckSquare className="w-4 h-4" />
-                              Based on Our Research
+                              Investigation-Based Recommendations
                             </h3>
                             <ol className="space-y-2 text-sm">
                               {state.analysis.step2.userFriendly.recommendedActions.map((action, index) => (
@@ -770,13 +823,13 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                           </div>
                         )}
 
-                        {/* Specific Official Sources */}
+                        {/* Official Verification Sources */}
                         {state.analysis.step2.userFriendly.officialSources && 
                          state.analysis.step2.userFriendly.officialSources.length > 0 && (
                           <div className="border border-blue-100 bg-blue-50 rounded-lg p-4">
                             <h3 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
                               <ExternalLink className="w-4 h-4" />
-                              How to Verify Independently
+                              Official Verification Sources
                             </h3>
                             <ul className="space-y-1 text-sm">
                               {state.analysis.step2.userFriendly.officialSources.map((source, index) => (
@@ -805,38 +858,43 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                   
                   {state.ui.showTechnicalDetails && (
                     <div className="mt-4 space-y-4">
-                      {/* Original Technical Results */}
+                      {/* Behavior Analysis Data */}
                       <div className="border border-gray-200 bg-gray-50 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 mb-2">Raw Analysis Data</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">Behavior Analysis Data</h4>
                         <div className="text-xs text-gray-700 space-y-2">
-                          <div><strong>Category:</strong> {state.analysis.step1.scamCategory}</div>
-                          <div><strong>Observed:</strong> {state.analysis.step1.whatWeObserved}</div>
-                          {state.analysis.step1.entitiesDetected && (
-                            <div>
-                              <strong>Entities Detected:</strong>
-                              <ul className="ml-4 mt-1">
-                                {state.analysis.step1.entitiesDetected.organizations && (
-                                  <li>Organizations: {state.analysis.step1.entitiesDetected.organizations.join(', ')}</li>
-                                )}
-                                {state.analysis.step1.entitiesDetected.emailAddresses && (
-                                  <li>Emails: {state.analysis.step1.entitiesDetected.emailAddresses.join(', ')}</li>
-                                )}
-                                {state.analysis.step1.entitiesDetected.domains && (
-                                  <li>Domains: {state.analysis.step1.entitiesDetected.domains.join(', ')}</li>
-                                )}
-                                {state.analysis.step1.entitiesDetected.addresses && (
-                                  <li>Addresses: {state.analysis.step1.entitiesDetected.addresses.join(', ')}</li>
-                                )}
-                              </ul>
-                            </div>
+                          {state.analysis.step1.behaviorAnalysis && (
+                            <>
+                              <div><strong>Impersonation Type:</strong> {state.analysis.step1.behaviorAnalysis.impersonationType}</div>
+                              <div><strong>Tactics:</strong> {state.analysis.step1.behaviorAnalysis.tacticsUsed?.join(', ')}</div>
+                              <div><strong>Requests:</strong> {state.analysis.step1.behaviorAnalysis.requestsMade?.join(', ')}</div>
+                              <div><strong>Red Flags:</strong> {state.analysis.step1.behaviorAnalysis.redFlags?.join(', ')}</div>
+                            </>
                           )}
                         </div>
                       </div>
 
+                      {/* Sender Entities Data */}
+                      {state.analysis.step1.communicationAnalysis?.senderEntities && (
+                        <div className="border border-gray-200 bg-gray-50 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-900 mb-2">Sender Entities Detected</h4>
+                          <div className="text-xs text-gray-700 space-y-2">
+                            {state.analysis.step1.communicationAnalysis.senderEntities.organizations && (
+                              <div><strong>Organizations:</strong> {state.analysis.step1.communicationAnalysis.senderEntities.organizations.join(', ')}</div>
+                            )}
+                            {state.analysis.step1.communicationAnalysis.senderEntities.contactMethods?.emails && (
+                              <div><strong>Emails:</strong> {state.analysis.step1.communicationAnalysis.senderEntities.contactMethods.emails.join(', ')}</div>
+                            )}
+                            {state.analysis.step1.communicationAnalysis.senderEntities.contactMethods?.domains && (
+                              <div><strong>Domains:</strong> {state.analysis.step1.communicationAnalysis.senderEntities.contactMethods.domains.join(', ')}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Research Raw Data */}
                       {state.analysis.step2 && state.analysis.step2.detailedFindings && (
                         <div className="border border-gray-200 bg-gray-50 rounded-lg p-4">
-                          <h4 className="font-medium text-gray-900 mb-2">Research Data</h4>
+                          <h4 className="font-medium text-gray-900 mb-2">Investigation Raw Data</h4>
                           <div className="bg-white border border-gray-200 rounded p-3 max-h-64 overflow-y-auto">
                             <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
                               {state.analysis.step2.detailedFindings}
@@ -851,14 +909,14 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
                 {/* Trust Building Footer */}
                 <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
                   <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                    <h3 className="font-medium text-blue-900 mb-2">🧠 You Did the Right Thing</h3>
+                    <h3 className="font-medium text-blue-900 mb-2">🧠 Smart Analysis Complete</h3>
                     <p className="text-sm text-blue-800">
-                      Checking suspicious communications is always smart. Your instincts brought you here, 
-                      and that shows you're being careful with your security.
+                      Our AI analyzed communication patterns, verified entities, and checked current threat intelligence 
+                      to provide you with actionable insights.
                     </p>
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">🔒 Your Privacy is Protected</h3>
+                    <h3 className="font-medium text-gray-900 mb-2">🔒 Privacy Protected</h3>
                     <p className="text-sm text-gray-700">
                       We analyzed your communication securely and don't store your personal information.
                     </p>
@@ -875,7 +933,7 @@ Report generated by Ask Allerna - AI-Powered Scam Detection`;
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium">Scam Analysis Report</h3>
+              <h3 className="text-lg font-medium">Communication Analysis Report</h3>
               <button 
                 onClick={() => dispatch({ type: 'SET_REPORT', payload: { show: false } })} 
                 className="text-white hover:text-gray-200 text-xl font-medium"
