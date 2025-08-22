@@ -284,7 +284,7 @@ Provide specific, factual verification results with exact official contact infor
         category: 'sender_contact_verification',
         targetEntity: [...allEmails, ...allDomains].join(', '),
         description: `Verifying sender contact methods`,
-        prompt: `Verify legitimacy of these sender contact methods: ${[...allEmails, ...allDomails].join(', ')}
+        prompt: `Verify legitimacy of these sender contact methods: ${[...allEmails, ...allDomains].join(', ')}
 
 DOMAIN AND EMAIL VERIFICATION:
 1. Domain registration information and age
